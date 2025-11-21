@@ -12,7 +12,7 @@ pub struct Config {
     clientid: String,
 }
 
-pub fn get_oath() -> String {
+pub fn get_oauth() -> String {
     let filename = "config.toml";
     let file = match fs::read_to_string(filename) {
         Ok(c) => c,

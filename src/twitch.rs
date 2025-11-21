@@ -6,7 +6,7 @@ use lazy_static::lazy_static;
 mod config;
 
 lazy_static!{
-    static ref OAUTH_TOKEN: String = config::get_oath();
+    static ref OAUTH_TOKEN: String = config::get_oauth();
     static ref CLIENTID: String = config::get_clientid();
 }
 
