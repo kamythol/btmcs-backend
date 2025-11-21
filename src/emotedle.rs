@@ -9,7 +9,7 @@ use rocket::http::{ContentType, Status};
 
 use crate::seed::DailySeed;
 
-pub async fn emote_image(stage: u8) -> anyhow::Result<Option<Vec<u8>>, Error> {
+async fn emote_image(stage: u8) -> anyhow::Result<Option<Vec<u8>>, Error> {
     let inst = Instant::now();
     let mut buf = Vec::new();
     let image_bytes = reqwest::get(get_emote("link").await.expect("failed")).await?.bytes().await?;
@@ -24,7 +24,7 @@ pub async fn emote_image(stage: u8) -> anyhow::Result<Option<Vec<u8>>, Error> {
         (4, x/2.0),
         (5, x*0.75),
         (10, x)
-        ].into();
+    ].into();
     let stage_map_y: HashMap<u8, f32> = [
         (0, y*0.1),
         (1, y*0.175),
@@ -43,7 +43,7 @@ pub async fn emote_image(stage: u8) -> anyhow::Result<Option<Vec<u8>>, Error> {
     Ok(Some(buf))
 }
 
-pub async fn get_emote(what: &str) -> anyhow::Result<String, Error> {
+async fn get_emote(what: &str) -> anyhow::Result<String, Error> {
     let inst = Instant::now();
     let mut seed = DailySeed::new();
     let set = seed.get_set();
@@ -53,26 +53,26 @@ pub async fn get_emote(what: &str) -> anyhow::Result<String, Error> {
         .json().await? 
     } else { 
         reqwest::get("https://emotes.crippled.dev/v1/global/7tv").await?
-        .json::<Value>().await?.clone() 
+        .json::<Value>().await?
     };
-    let global_emotes: &Vec<Value> = &data.as_array().expect("e");
-    seed.process(global_emotes.len());
+    let emote_set: &Vec<Value> = &data.as_array().expect("e"); // put json into Vec
+    seed.process(emote_set.len());
     let index = seed.get_index();
-    let emote = &global_emotes[index];
-    let emote_name = emote["code"].as_str().unwrap().to_string();
-    let ge = emote["urls"].as_array().expect("augh2");
+    let emote = &emote_set[index]; // get a random emote
+    let emote_name = emote["code"].as_str().unwrap().to_string(); // get emote name
+    let emote_urls = emote["urls"].as_array().expect("augh2"); // grab emote urls into Vec
     
-    let l = ge.iter().find(|url| url["size"] == "4x")
+    let link = emote_urls.iter().find(|url| url["size"] == "4x") // get the 4x url
         .and_then(|url| url["url"].as_str())
         .unwrap_or("augh3").to_string();
     println!("[data] {}ms", inst.elapsed().as_millis());
 
     if what == "link" {
-        Ok(l)
+        Ok(link)
     } else if what == "name" {
         Ok(emote_name)
     } else {
-        Ok(l)
+        Ok(link)
     }
 }
 

@@ -18,7 +18,7 @@ pub fn get_oauth() -> String {
         Ok(c) => c,
         Err(_) => {
             eprintln!("Could not read config");
-            panic!("Make sure config is correct.")
+            panic!("Config file seems to be missing.")
         }
     };
 
@@ -38,7 +38,7 @@ pub fn get_clientid() -> String {
         Ok(c) => c,
         Err(_) => {
             eprintln!("Could not read config");
-            panic!("Make sure config is correct.")
+            panic!("Config file seems to be missing.")
         }
     };
 
