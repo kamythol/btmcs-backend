@@ -1,8 +1,9 @@
+// -- unused -- //
 use rosu_v2::prelude::*;
 
 async fn get_scores(username: &str) -> Vec<Score> {
     let client_id: u64 = 44609;
-    let client_secret = String::from(""); // osu token
+    let client_secret = String::from(""); // token
     let osu = Osu::new(client_id, client_secret).await.unwrap();
     
     let scores: Vec<Score> = osu.user_scores(username)
@@ -65,8 +66,8 @@ async fn score(username: &str) -> String {
             let diff = format!("[{}] ({}, {}*)", diffname, bm.creator_name, stars);
             let map_info = format!("{} - {} {}", bm.artist, bm.title, diff);
                 
-            let res = format!("{} | {}pp +{} {} lazer score\nSet at {} Lazer: {}", map_info, pp, mods, score, date, lazerstate);
-            // println!("{}", map_info);
+            let res = format!("{} | {}pp +{} {} lazer score\nSet at {} Lazer: {}", 
+                map_info, pp, mods, score, date, lazerstate);
             println!("{}", res);
             return res
         } else {
@@ -75,7 +76,6 @@ async fn score(username: &str) -> String {
     } else {
         return "No score found.".to_string()
     }
-
 }
 
 #[get("/acc/<username>")]

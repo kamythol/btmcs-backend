@@ -1,34 +1,38 @@
 use anyhow::Result;
 use serde::{Deserialize};
-use rocket::serde::{Serialize};
+use rocket::serde::{json::Json, Serialize};
+use lazy_static::lazy_static;
 
-const OAUTH_TOKEN: &str = "";
-const CLIENTID: &str = "";
+mod config;
+
+lazy_static!{
+    static ref OAUTH_TOKEN: String = config::get_oath();
+    static ref CLIENTID: String = config::get_clientid();
+}
 
 #[derive(Serialize, Deserialize)]
-pub struct ChannelInfo {
-    pub(crate) data: Vec<Channel>,
+struct ChannelInfo {
+    data: Vec<Channel>,
     pagination: Pagination,
 }
 #[derive(Serialize, Deserialize)]
-#[serde(crate = "rocket::serde")]
 pub struct Channel {
-    pub(crate) broadcaster_language: String,
-    pub(crate) broadcaster_login: String,
-    pub(crate) display_name: String,
-    pub(crate) game_id: String,
-    pub(crate) game_name: String,
-    pub(crate) id: String,
-    pub(crate) is_live: bool,
-    pub(crate) tag_ids: Vec<String>,
-    pub(crate) tags: Vec<String>,
-    pub(crate) thumbnail_url: String,
-    pub(crate) title: String,
-    pub(crate) started_at: String,
+    broadcaster_language: String,
+    broadcaster_login: String,
+    display_name: String,
+    game_id: String,
+    game_name: String,
+    id: String,
+    is_live: bool,
+    tag_ids: Vec<String>,
+    tags: Vec<String>,
+    thumbnail_url: String,
+    title: String,
+    started_at: String,
 }
 #[derive(Serialize, Deserialize)]
-pub struct StreamInfo {
-    pub(crate) data: Vec<Stream>,
+struct StreamInfo {
+    data: Vec<Stream>,
     pagination: Pagination,
 }
 
@@ -54,22 +58,22 @@ pub struct Stream {
     muted_segments: Vec<Pagination>,
 }
 #[derive(Serialize, Deserialize)]
-pub struct Pagination {
+struct Pagination {
 }
 #[derive(Serialize, Deserialize)]
-pub struct Followers {
-    pub(crate) total: u64,
+struct Followers {
+    total: u64,
     data: Vec<Pagination>,
     pagination: Pagination,
 }
 
-pub async fn is_live(channel: String) -> Result<Vec<Channel>, anyhow::Error> {
+async fn is_live(channel: String) -> Result<Vec<Channel>, anyhow::Error> {
     let req = format!("https://api.twitch.tv/helix/search/channels?query={}&first=1", channel);
     let client = reqwest::Client::new();
     let data = client
         .get(req)
-        .header("Authorization", format!("Bearer {OAUTH_TOKEN}"))
-        .header("Client-Id", CLIENTID)
+        .header("Authorization", format!("Bearer {}", OAUTH_TOKEN.as_str()))
+        .header("Client-Id", CLIENTID.as_str())
         .send()
         .await?
         .json::<ChannelInfo>()
@@ -78,13 +82,13 @@ pub async fn is_live(channel: String) -> Result<Vec<Channel>, anyhow::Error> {
     Ok(data.data)
 }
 
-pub async fn followers() -> Result<u64, anyhow::Error> {
+async fn get_followers() -> Result<u64, anyhow::Error> {
     let req = format!("https://api.twitch.tv/helix/channels/followers?broadcaster_id=46708418&first=1");
     let client = reqwest::Client::new();
     let data = client
         .get(req)
-        .header("Authorization", format!("Bearer {OAUTH_TOKEN}"))
-        .header("Client-Id", CLIENTID)
+        .header("Authorization", format!("Bearer {}", OAUTH_TOKEN.as_str()))
+        .header("Client-Id", CLIENTID.as_str())
         .send()
         .await?
         .json::<Followers>()
@@ -93,17 +97,36 @@ pub async fn followers() -> Result<u64, anyhow::Error> {
     Ok(data.total)
 }
 
-pub async fn latest() -> Result<Vec<Stream>, anyhow::Error> {
+async fn get_latest_stream() -> Result<Vec<Stream>, anyhow::Error> {
     let req = format!("https://api.twitch.tv/helix/videos?user_id=46708418&first=1");
     let client = reqwest::Client::new();
     let data = client
         .get(req)
-        .header("Authorization", format!("Bearer {OAUTH_TOKEN}"))
-        .header("Client-Id", CLIENTID)
+        .header("Authorization", format!("Bearer {}", OAUTH_TOKEN.as_str()))
+        .header("Client-Id", CLIENTID.as_str())
         .send()
         .await?
         .json::<StreamInfo>()
         .await?;
 
     Ok(data.data)
+}
+
+
+#[get("/twitchinfo")]
+pub async fn twitchinfo() -> Json<Vec<Channel>> {
+    let info = is_live("btmc".to_string()).await.unwrap();
+    return Json(info)
+}
+
+#[get("/followers")]
+pub async fn followers() -> String {
+    let followers = get_followers().await.unwrap().to_string();
+    return followers
+}
+
+#[get("/latest")]
+pub async fn latest() -> Json<Vec<Stream>> {
+    let streaminfo = get_latest_stream().await.unwrap();
+    return Json(streaminfo)
 }
