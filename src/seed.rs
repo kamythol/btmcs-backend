@@ -18,14 +18,14 @@ impl DailySeed {
         DailySeed { index: 0, set: daily_set, length: 0 }
     }
     fn genseed(date: DateTime<Utc>) -> u64 { // generates a seed based on date
-        let seed = (date.year() as u64) << 16 | (date.month() as u64) << 8 | (date.day() as u64);
+        let seed = (date.year() as u64) << 16 | (date.month() as u64) << 8 | (date.day() as u64) << 2;
         seed
     }
     pub fn process(&mut self, length: usize) { // generates a range to be used as a maximum index limit
         self.length = length;
         let seed = Self::genseed(Utc::now());
         let mut rng: StdRng = SeedableRng::seed_from_u64(seed);
-        self.index = rng.random_range(1..=length);
+        self.index = rng.random_range(0..length);
     }
 
     pub fn get_index(&self) -> usize { self.index }
