@@ -14,6 +14,7 @@ async fn emote_image(stage: u8) -> anyhow::Result<Option<Vec<u8>>, Error> {
     let mut buf = Vec::new();
     let image_bytes = reqwest::get(get_emote("link").await.expect("failed")).await?.bytes().await?;
     let mut image = image::load(Cursor::new(&image_bytes), image::ImageFormat::WebP).unwrap();
+    // xy dimension values should be independent of each other
     let x = image.dimensions().0 as f32;
     let y = image.dimensions().1 as f32;
     let stage_map_x: HashMap<u8, f32> = [
@@ -55,7 +56,7 @@ async fn get_emote(what: &str) -> anyhow::Result<String, Error> {
         reqwest::get("https://emotes.crippled.dev/v1/global/7tv").await?
         .json::<Value>().await?
     };
-    let emote_set: &Vec<Value> = &data.as_array().expect("e"); // put json into Vec
+    let emote_set: &Vec<Value> = data.as_array().expect("e"); // put json into Vec
     seed.process(emote_set.len());
     let index = seed.get_index();
     let emote = &emote_set[index]; // get a random emote

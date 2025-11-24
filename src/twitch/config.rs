@@ -1,13 +1,12 @@
-use toml;
 use std::fs;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
-pub struct Data {
+struct Data {
     config: Config,
 }
 #[derive(Deserialize)]
-pub struct Config {
+struct Config {
     oauth: String,
     clientid: String,
 }
@@ -30,7 +29,7 @@ pub fn get_oauth() -> String {
         }
     };
 
-    return data.config.oauth
+    data.config.oauth
 }
 pub fn get_clientid() -> String {
     let filename = "config.toml";
@@ -50,5 +49,5 @@ pub fn get_clientid() -> String {
         }
     };
 
-    return data.config.clientid
+    data.config.clientid
 }

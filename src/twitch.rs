@@ -67,7 +67,7 @@ struct Followers {
     pagination: Pagination,
 }
 
-async fn is_live(channel: String) -> Result<Vec<Channel>, anyhow::Error> {
+async fn get_twitch_info(channel: String) -> Result<Vec<Channel>, anyhow::Error> {
     let req = format!("https://api.twitch.tv/helix/search/channels?query={}&first=1", channel);
     let client = reqwest::Client::new();
     let data = client
@@ -114,19 +114,19 @@ async fn get_latest_stream() -> Result<Vec<Stream>, anyhow::Error> {
 
 
 #[get("/twitchinfo")]
-pub async fn twitchinfo() -> Json<Vec<Channel>> {
-    let info = is_live("btmc".to_string()).await.unwrap();
+pub async fn twitchinfo() -> Json<Vec<Channel>> { // twitch channel info
+    let info = get_twitch_info("btmc".to_string()).await.unwrap();
     return Json(info)
 }
 
 #[get("/followers")]
-pub async fn followers() -> String {
+pub async fn followers() -> String { // follower count
     let followers = get_followers().await.unwrap().to_string();
     return followers
 }
 
 #[get("/latest")]
-pub async fn latest() -> Json<Vec<Stream>> {
+pub async fn latest() -> Json<Vec<Stream>> { // latest stream info
     let streaminfo = get_latest_stream().await.unwrap();
     return Json(streaminfo)
 }
