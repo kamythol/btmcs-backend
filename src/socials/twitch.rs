@@ -112,8 +112,7 @@ async fn get_latest_stream() -> Result<Vec<Stream>, anyhow::Error> {
     Ok(data.data)
 }
 
-
-#[get("/twitchinfo")]
+#[get("/data")]
 pub async fn twitchinfo() -> Json<Vec<Channel>> { // twitch channel info
     let info = get_twitch_info("btmc".to_string()).await.unwrap();
     return Json(info)
@@ -126,7 +125,7 @@ pub async fn followers() -> String { // follower count
 }
 
 #[get("/latest")]
-pub async fn latest() -> Json<Vec<Stream>> { // latest stream info
+pub async fn latest_stream() -> Json<Vec<Stream>> { // latest stream info
     let streaminfo = get_latest_stream().await.unwrap();
     return Json(streaminfo)
 }

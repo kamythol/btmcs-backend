@@ -1,10 +1,18 @@
 #[macro_use] extern crate rocket;
 use rocket_cors::{AllowedOrigins, CorsOptions};
-use crate::twitch as Twitch;
+use crate::{
+    socials::twitch as Twitch,
+    socials::youtube as YT, 
+    socials::twitter as Twitter
+};
 
-mod twitch;
 mod seed;
 mod emotedle;
+mod socials {
+    pub mod twitch;
+    pub mod youtube;
+    pub mod twitter;
+}
 
 #[get("/ping")]
 fn ping() -> String {
@@ -20,10 +28,14 @@ fn rocket() -> _ {
 
     rocket::build()
         .attach(cors)
+        .mount("/", routes![ping])
         .mount("/random", routes![emotedle::emote])
         .mount("/real", routes![emotedle::emotename])
-        .mount("/", routes![ping])
-        .mount("/", routes![Twitch::twitchinfo])
-        .mount("/twitchinfo", routes![Twitch::followers])
-        .mount("/twitchinfo", routes![Twitch::latest])
+        .mount("/youtube", routes![YT::get_subs])
+        .mount("/youtube", routes![YT::get_total_views])
+        .mount("/youtube", routes![YT::get_total_videos])
+        .mount("/twitch", routes![Twitch::twitchinfo])
+        .mount("/twitch", routes![Twitch::followers])
+        .mount("/twitch", routes![Twitch::latest_stream])
+        .mount("/twitter", routes![Twitter::get_followers])
 }
