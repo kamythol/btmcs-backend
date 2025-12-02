@@ -1,23 +1,23 @@
 use anyhow::Result;
 use rocket::serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 struct YouTubeData {
     counters: Counters,
 }
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 struct Counters {
     estimation: Estimation,
     api: Api,
 }
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct Estimation {
     subscriber_count: u32,
     view_count: u64,
     video_count: u32,
 }
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct Api {
     subscriber_count: u32,
@@ -33,6 +33,7 @@ async fn get_yt_data() -> Result<Counters, anyhow::Error> {
         .await?
         .json::<YouTubeData>()
         .await?;
+    println!("{:?}", data);
     Ok(data.counters)
 }
 
