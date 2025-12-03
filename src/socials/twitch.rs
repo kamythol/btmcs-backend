@@ -55,7 +55,8 @@ pub struct Stream {
     #[serde[rename = "type"]]
     stream_type: String,
     duration: String,
-    muted_segments: Vec<Pagination>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    muted_segments: Option<Vec<Pagination>>,
 }
 #[derive(Serialize, Deserialize)]
 struct Pagination {
