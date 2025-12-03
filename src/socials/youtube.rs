@@ -29,11 +29,13 @@ async fn get_yt_data() -> Result<Counters, anyhow::Error> {
     let req = format!("https://api.socialcounts.org/youtube-live-subscriber-count/UCcHYmDcbHmGIebwGYgLQDOw");
     let client = reqwest::Client::new();
     let data = client
-        .get(req).send()
+        .get(req)
+        .header("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36")
+        .send()
         .await?
         .json::<YouTubeData>()
         .await?;
-    println!("{:?}", data);
+    println!("data: {:?}", data);
     Ok(data.counters)
 }
 
