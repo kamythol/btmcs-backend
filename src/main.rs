@@ -34,7 +34,6 @@ fn rocket() -> _ {
         .mount("/youtube", routes![YT::get_subs])
         .mount("/youtube", routes![YT::get_total_views])
         .mount("/youtube", routes![YT::get_total_videos])
-        .mount("/youtube", routes![YT::aeorujfdn])
         .mount("/twitch", routes![Twitch::twitchinfo])
         .mount("/twitch", routes![Twitch::followers])
         .mount("/twitch", routes![Twitch::latest_stream])

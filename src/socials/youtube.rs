@@ -36,17 +36,6 @@ async fn get_yt_data() -> Result<Counters, anyhow::Error> {
     println!("data: {:?}", data);
     Ok(data.counters)
 }
-async fn get_yt_datefea() -> Result<String, anyhow::Error> {
-    let req = format!("https://api.socialcounts.org/youtube-live-subscriber-count/UCcHYmDcbHmGIebwGYgLQDOw");
-    let client = reqwest::Client::new();
-    let data = client
-        .get(req).send()
-        .await?
-        .text()
-        .await?;
-    println!("data: {:?}", data);
-    Ok(data)
-}
 
 #[get("/subs")]
 pub async fn get_subs() -> String {
@@ -64,10 +53,4 @@ pub async fn get_total_views() -> String {
 pub async fn get_total_videos() -> String {
     let data = get_yt_data().await.expect("e");
     return data.estimation.video_count.to_string()
-}
-
-#[get("/aieovk")]
-pub async fn aeorujfdn() -> String {
-    let d = get_yt_datefea().await.expect("e");
-    return d
 }
