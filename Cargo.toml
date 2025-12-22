@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.100"
+cached = { version = "0.56.0", features = ["async"] }
 chrono = "0.4.42"
 image = { version = "0.25.8", features = ["default-formats"] }
 lazy_static = "1.5.0"

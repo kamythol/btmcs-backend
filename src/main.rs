@@ -8,6 +8,7 @@ use crate::{
 
 mod seed;
 mod emotedle;
+mod mcsr_deaths;
 mod socials {
     pub mod twitch;
     pub mod youtube;
@@ -38,4 +39,5 @@ fn rocket() -> _ {
         .mount("/twitch", routes![Twitch::followers])
         .mount("/twitch", routes![Twitch::latest_stream])
         .mount("/twitter", routes![Twitter::get_followers])
+        .mount("/mcsr", routes![mcsr_deaths::deaths])
 }
