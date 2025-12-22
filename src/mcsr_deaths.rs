@@ -29,7 +29,7 @@ async fn get_history() -> Result<Vec<match_history::GameData>, anyhow::Error> {
     Ok(data.data)
 }
 
-#[cached(time = 300, sync_writes = "default")]
+#[cached(time = 120, sync_writes = "default")]
 #[get("/deaths")]
 pub async fn deaths() -> String {
     let inst = Instant::now();
