@@ -19,18 +19,7 @@ async fn get_match(match_id: u32, season: u8) -> Result<match_data::GameData, an
     Ok(data.data)
 }
 
-async fn get_history1() -> Result<Vec<match_history::GameData>, anyhow::Error> {
-    let req = format!("https://mcsrranked.com/api/users/beasttrollmc/matches?count=100&type=2&after=4168312");
-    let client = reqwest::Client::new();
-    let data = client
-        .get(req)
-        .send()
-        .await?
-        .json::<match_history::Response>()
-        .await?;
-    Ok(data.data)
-}
-async fn get_history2() -> Result<Vec<match_history::GameData>, anyhow::Error> {
+async fn get_history() -> Result<Vec<match_history::GameData>, anyhow::Error> {
     let req = format!("https://mcsrranked.com/api/users/beasttrollmc/matches?count=100&type=2&after=4274310");
     let client = reqwest::Client::new();
     let data = client
@@ -46,28 +35,12 @@ async fn get_history2() -> Result<Vec<match_history::GameData>, anyhow::Error> {
 #[get("/deaths")]
 pub async fn deaths() -> String {
     let inst = Instant::now();
-    let mut deaths: u32 = 0;
-    let mut matches: u32 = 0;
+    let mut deaths: u32 = 80;
+    let mut matches: u32 = 100;
     let matchtext = "projectelo.timeline.death".to_string();
-    let mh1 = get_history1().await.expect("augh");
-    let mh2 = get_history2().await.expect("augh");
+    let mh = get_history().await.expect("augh");
     
-    for m in mh2 {
-        matches += 1;
-        println!("Match {} S{} in {}m", m.id, m.season, m.result.time/1000/60);
-        let gd = get_match(m.id, m.season).await.unwrap();
-        let timelines = gd.timelines;
-        for timeline in timelines {
-            if (timeline.timeline_type == matchtext) &&
-               (timeline.uuid == UUID.to_string()) {
-                println!("{:?}", timeline);
-                deaths += 1;
-            } else {
-                continue;
-            }
-        }
-    }
-    for m in mh1 {
+    for m in mh {
         matches += 1;
         println!("Match {} S{} in {}m", m.id, m.season, m.result.time/1000/60);
         let gd = get_match(m.id, m.season).await.unwrap();
