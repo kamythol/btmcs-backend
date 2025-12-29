@@ -40,4 +40,5 @@ fn rocket() -> _ {
         .mount("/twitch", routes![Twitch::latest_stream])
         .mount("/twitter", routes![Twitter::get_followers])
         .mount("/mcsr", routes![mcsr_deaths::deaths])
+        .mount("/mcsr", routes![mcsr_deaths::create_data])
 }
