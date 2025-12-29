@@ -16,7 +16,7 @@ pub struct Data {
     elo_rank: u32,
     achievements: Achievements,
     timestamp: Timestamp,
-    statistics: Statistics,
+    pub(crate) statistics: Statistics,
     connections: Connections,
     weekly_races: Vec<WeeklyRaces>,
     season_result: Option<SeasonResult>,
@@ -50,14 +50,14 @@ pub struct Timestamp {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Statistics {
-    season: SeasonStatistics,
-    total: TotalStatistics,
+    pub(crate) season: SeasonStatistics,
+    pub(crate) total: TotalStatistics,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct SeasonStatistics {
-    best_time: Ranking,
+    pub(crate) best_time: Ranking,
     highest_win_streak: WinStreak,
     current_win_streak: WinStreak,
     played_matches: Matches,
@@ -72,7 +72,7 @@ pub struct SeasonStatistics {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct TotalStatistics {
-    best_time: Ranking,
+    pub(crate) best_time: Ranking,
     highest_win_streak: WinStreak,
     current_win_streak: WinStreak,
     played_matches: Matches,
@@ -86,7 +86,7 @@ pub struct TotalStatistics {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Ranking {
-    ranked: u32,
+    pub(crate) ranked: u32,
     casual: Option<u32>,
 }
 

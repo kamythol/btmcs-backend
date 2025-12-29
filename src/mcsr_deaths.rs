@@ -11,7 +11,9 @@ mod profile_data;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Final {
     deaths: u32,
-    elo: u32
+    elo: u32,
+    season_best: String,
+    all_best: String
 }
 const UUID: &str = "8a8174eb699a49fcb2299af5eede0992";
 
@@ -52,12 +54,10 @@ async fn get_profile() -> Result<profile_data::Data, Error> {
 }
 
 #[cached(time = 120, sync_writes = "default")]
-#[get("/deaths")]
-pub async fn deaths() -> String {
-    let inst = Instant::now();
-    let mut deaths: u32 = 80;
-    let mut matches: u32 = 100;
+pub async fn get_counts() -> Vec<u32> {
     let matchtext = "projectelo.timeline.death".to_string();
+    let mut matches: u32 = 100;
+    let mut deaths: u32 = 80;
     let mh = get_history().await.expect("augh");
     
     for m in mh {
@@ -74,17 +74,31 @@ pub async fn deaths() -> String {
             }
         }
     }
-    let f = format!("{} deaths in {} matches", deaths, matches);
-    println!("Took {}ms", inst.elapsed().as_millis());
-    return f
+    return vec![matches, deaths]
 }
 
+#[cached(time = 120, sync_writes = "default")]
+#[get("/deaths")]
+pub async fn deaths() -> String{
+    let counts = get_counts().await;
+    let matches = counts[0];
+    let deaths = counts[1];
+
+    let f = format!("{} deaths in {} matches", deaths, matches);
+    return f
+}
 
 #[cached(time = 600, sync_writes = "default")]
 #[get("/data")]
 pub async fn create_data() -> Json<Final>{
     let p = get_profile().await.expect("au");
-    let deaths: u32 = 80;
-    let a = Final {deaths, elo: p.elo_rate.unwrap_or(0)};
+    let counts = get_counts().await;
+    let deaths = counts[1];
+
+    let season_best_ms = p.statistics.season.best_time.ranked;
+    let all_best_ms = p.statistics.total.best_time.ranked;
+    let season_formatted = format!("{}:{:02}", season_best_ms / 1000 / 60, season_best_ms / 1000 % 60);
+    let all_formatted = format!("{}:{:02}", all_best_ms / 1000 / 60, all_best_ms / 1000 % 60);
+    let a = Final {deaths, elo: p.elo_rate.unwrap_or(0), season_best: season_formatted, all_best: all_formatted};
     return Json(a)
 }
