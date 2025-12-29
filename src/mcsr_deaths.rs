@@ -11,9 +11,10 @@ mod profile_data;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Final {
     deaths: u32,
+    matches: u32,
     elo: u32,
     season_best: String,
-    all_best: String
+    all_best: String,
 }
 const UUID: &str = "8a8174eb699a49fcb2299af5eede0992";
 
@@ -93,12 +94,13 @@ pub async fn deaths() -> String{
 pub async fn create_data() -> Json<Final>{
     let p = get_profile().await.expect("au");
     let counts = get_counts().await;
+    let matches = counts[0];
     let deaths = counts[1];
 
     let season_best_ms = p.statistics.season.best_time.ranked;
     let all_best_ms = p.statistics.total.best_time.ranked;
     let season_formatted = format!("{}:{:02}", season_best_ms / 1000 / 60, season_best_ms / 1000 % 60);
     let all_formatted = format!("{}:{:02}", all_best_ms / 1000 / 60, all_best_ms / 1000 % 60);
-    let a = Final {deaths, elo: p.elo_rate.unwrap_or(0), season_best: season_formatted, all_best: all_formatted};
+    let a = Final {deaths, matches, elo: p.elo_rate.unwrap_or(0), season_best: season_formatted, all_best: all_formatted};
     return Json(a)
 }
