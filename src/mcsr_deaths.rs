@@ -3,6 +3,7 @@ use anyhow::{Error, Result};
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 use tokio::time::{Instant, Duration};
+use chrono::prelude::*;
 
 mod match_data;
 mod match_history;
@@ -12,6 +13,8 @@ mod profile_data;
 pub struct Final {
     deaths: u32,
     matches: u32,
+    deaths_today: u32,
+    matches_today: u32,
     elo: u32,
     season_best: String,
     all_best: String,
@@ -31,7 +34,8 @@ async fn get_match(match_id: u32, season: u8) -> Result<match_data::GameData, Er
 }
 
 async fn get_history() -> Result<Vec<match_history::GameData>, Error> {
-    let req = format!("https://mcsrranked.com/api/users/beasttrollmc/matches?count=100&type=2&after=4274310");
+    // let req = format!("https://mcsrranked.com/api/users/beasttrollmc/matches?count=100&type=2&after=4526605"); // 100
+    let req = format!("https://mcsrranked.com/api/users/beasttrollmc/matches?count=100&type=2&after=4424617"); // 160
     let client = reqwest::Client::new();
     let data = client
         .get(req)
@@ -57,25 +61,36 @@ async fn get_profile() -> Result<profile_data::Data, Error> {
 #[cached(time = 120, sync_writes = "default")]
 pub async fn get_counts() -> Vec<u32> {
     let matchtext = "projectelo.timeline.death".to_string();
-    let mut matches: u32 = 100;
-    let mut deaths: u32 = 80;
+    let mut matches: u32 = 160; // match count offset - last: 100
+    let mut deaths: u32 = 135; // death count offset - last: 80
     let mh = get_history().await.expect("augh");
+    let current_utc: DateTime<Utc> = Utc::now();
+    let mut deaths_today: u32 = 0;
+    let mut matches_today: u32 = 0;
     
     for m in mh {
         matches += 1;
+        println!("{}", m.date);
+        let t = Utc.timestamp_opt(m.date as i64, 0).unwrap();
+        if t.day() == current_utc.day() {
+            matches_today += 1;
+        }
         println!("Match {} S{} in {}m", m.id, m.season, m.result.time/1000/60);
         let gd = get_match(m.id, m.season).await.unwrap();
         for timeline in gd.timelines {
             if (timeline.timeline_type == matchtext) &&
                (timeline.uuid == UUID.to_string()) {
                 println!("{:?}", timeline);
+                if t.day() == current_utc.day() {
+                    deaths_today += 1;
+                }
                 deaths += 1;
             } else {
                 continue;
             }
         }
     }
-    return vec![matches, deaths]
+    return vec![matches, deaths, matches_today, deaths_today]
 }
 
 #[cached(time = 120, sync_writes = "default")]
@@ -89,18 +104,20 @@ pub async fn deaths() -> String{
     return f
 }
 
-#[cached(time = 600, sync_writes = "default")]
+#[cached(time = 300, sync_writes = "default")]
 #[get("/data")]
 pub async fn create_data() -> Json<Final>{
     let p = get_profile().await.expect("au");
     let counts = get_counts().await;
     let matches = counts[0];
     let deaths = counts[1];
+    let matches_today = counts[2];
+    let deaths_today = counts[3];
 
     let season_best_ms = p.statistics.season.best_time.ranked;
     let all_best_ms = p.statistics.total.best_time.ranked;
     let season_formatted = format!("{}:{:02}", season_best_ms / 1000 / 60, season_best_ms / 1000 % 60);
     let all_formatted = format!("{}:{:02}", all_best_ms / 1000 / 60, all_best_ms / 1000 % 60);
-    let a = Final {deaths, matches, elo: p.elo_rate.unwrap_or(0), season_best: season_formatted, all_best: all_formatted};
+    let a = Final {deaths, matches, deaths_today, matches_today, elo: p.elo_rate.unwrap_or(0), season_best: season_formatted, all_best: all_formatted};
     return Json(a)
 }

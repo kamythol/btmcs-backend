@@ -26,7 +26,7 @@ pub struct GameData {
     beginner: bool,
     bot_source: Option<u32>,
     pub(crate) season: u8,
-    date: u64,
+    pub(crate) date: u64,
     seed_type: String,
     bastion_type: String,
     tag: Option<String>,
