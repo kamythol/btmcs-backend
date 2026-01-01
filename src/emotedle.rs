@@ -47,7 +47,7 @@ async fn emote_image(stage: u8) -> anyhow::Result<Option<Vec<u8>>, Error> {
 async fn get_emote(what: &str) -> anyhow::Result<String, Error> {
     let inst = Instant::now();
     let mut seed = DailySeed::new();
-    let set = seed.get_set();
+    let set = 0;
     
     let data: Value = if set == 0 { 
         reqwest::get("https://emotes.crippled.dev/v1/channel/btmc/7tv").await?
