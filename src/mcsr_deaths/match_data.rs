@@ -21,7 +21,7 @@ pub struct GameData {
     decayed: bool,
     rank: Rank,
     vod: Vec<Vod>,
-    changes: Vec<Change>,
+    pub(crate) changes: Vec<Change>,
     completions: Vec<Completions>, 
     pub(crate) timelines: Vec<Timeline>,
     beginner: bool,
@@ -79,8 +79,8 @@ pub struct Vod {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Change {
-    uuid: String,
-    change: Option<i32>,
+    pub(crate) uuid: String,
+    pub(crate) change: Option<i32>,
     elo_rate: Option<u32>,
 }
 
