@@ -13,7 +13,7 @@ pub struct Data {
     nickname: String,
     role_type: u32,
     pub(crate) elo_rate: Option<u32>,
-    elo_rank: u32,
+    elo_rank: Option<u32>,
     achievements: Achievements,
     timestamp: Timestamp,
     pub(crate) statistics: Statistics,
@@ -86,7 +86,7 @@ pub struct TotalStatistics {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Ranking {
-    pub(crate) ranked: u32,
+    pub(crate) ranked: Option<u32>,
     casual: Option<u32>,
 }
 
@@ -141,15 +141,15 @@ pub struct WeeklyRaces {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SeasonResult {
     last: LastSeason,
-    highest: u32,
-    lowest: u32,
+    highest: Option<u32>,
+    lowest: Option<u32>,
     phases: Option<Vec<Phases>>, 
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct LastSeason {
-    elo_rate: u32,
+    elo_rate: Option<u32>,
     elo_rank: Option<u32>,
     phase_point: u32,
 }
