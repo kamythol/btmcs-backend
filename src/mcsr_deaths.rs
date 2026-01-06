@@ -8,6 +8,7 @@ use chrono::prelude::*;
 mod match_data;
 mod match_history;
 mod profile_data;
+mod seasons_data;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Final {
@@ -17,6 +18,8 @@ pub struct Final {
     matches_today: u32,
     elo: u32,
     elo_today: i32,
+    elo_peak_season: u32,
+    elo_peak_overall: u32,
     season_best: String,
     all_best: String,
 }
@@ -51,7 +54,7 @@ async fn get_history() -> Result<Vec<match_history::GameData>, Error> {
 }
 
 async fn get_profile() -> Result<profile_data::Data, Error> {
-    let req = format!("https://mcsrranked.com/api/users/beasttrollmc?season=10");
+    let req = format!("https://mcsrranked.com/api/users/beasttrollmc");
     let client = reqwest::Client::new();
     let data = client
         .get(req)
@@ -59,6 +62,13 @@ async fn get_profile() -> Result<profile_data::Data, Error> {
         .await?
         .json::<profile_data::Response>()
         .await?;
+    Ok(data.data)
+}
+
+async fn get_profile_seasons() -> Result<seasons_data::Data, Error> {
+    let req = format!("https://mcsrranked.com/api/users/beasttrollmc/seasons");
+    let client = reqwest::Client::new();
+    let data = client.get(req).send().await?.json::<seasons_data::Response>().await?;
     Ok(data.data)
 }
 
@@ -71,8 +81,8 @@ pub async fn get_counts() -> Vec<u32> {
     // let mut matches: u32 = 160; // match count offset - last: 100
     // let mut deaths: u32 = 135; // death count offset - last: 80
 
-    let mut matches: u32 = 0;
-    let mut deaths: u32 = 0;
+    let mut matches: u32 = 34; // offset
+    let mut deaths: u32 = 24; // offset
     let mut matches_today: u32 = 0;
     let mut deaths_today: u32 = 0;
     let mut elo_today: i32 = 0;
@@ -107,6 +117,16 @@ pub async fn get_counts() -> Vec<u32> {
     return vec![matches, deaths, matches_today, deaths_today, elo_today.try_into().unwrap()]
 }
 
+async fn get_overall_peak() -> u32 {
+    let seasons = get_profile_seasons().await.expect("sea");
+    let mut peak: u32 = 0;
+    for season in seasons.season_results.values() {
+        if season.highest > peak { peak = season.highest; }
+    }
+    return peak
+}
+
+
 #[cached(time = 120, sync_writes = "default")]
 #[get("/deaths")]
 pub async fn deaths() -> String{
@@ -133,6 +153,17 @@ pub async fn create_data() -> Json<Final>{
     let all_best_ms = p.statistics.total.best_time.ranked;
     let season_formatted = format!("{}:{:02}", season_best_ms.unwrap_or(0) / 1000 / 60, season_best_ms.unwrap_or(0) / 1000 % 60);
     let all_formatted = format!("{}:{:02}", all_best_ms.unwrap_or(0) / 1000 / 60, all_best_ms.unwrap_or(0) / 1000 % 60);
-    let a = Final {deaths, matches, deaths_today, matches_today, elo: p.elo_rate.unwrap_or(0), elo_today, season_best: season_formatted, all_best: all_formatted};
+    let a = Final {
+        deaths, 
+        matches, 
+        deaths_today, 
+        matches_today, 
+        elo: p.elo_rate.unwrap_or(0), 
+        elo_peak_season: p.season_result.highest.unwrap_or(0),
+        elo_peak_overall: get_overall_peak().await,
+        elo_today,
+        season_best: season_formatted, 
+        all_best: all_formatted
+    };
     return Json(a)
 }

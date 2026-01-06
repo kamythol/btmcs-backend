@@ -19,7 +19,7 @@ pub struct Data {
     pub(crate) statistics: Statistics,
     connections: Connections,
     weekly_races: Vec<WeeklyRaces>,
-    season_result: Option<SeasonResult>,
+    pub(crate) season_result: SeasonResult,
     country: Option<String>,
 }
 
@@ -141,8 +141,8 @@ pub struct WeeklyRaces {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SeasonResult {
     last: LastSeason,
-    highest: Option<u32>,
-    lowest: Option<u32>,
+    pub(crate) highest: Option<u32>,
+    pub(crate) lowest: Option<u32>,
     phases: Option<Vec<Phases>>, 
 }
 
