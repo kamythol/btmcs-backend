@@ -135,7 +135,7 @@ pub async fn get_counts() -> Counts {
 async fn get_overall_peaks() -> Vec<u32> {
     let seasons = get_profile_seasons().await.expect("sea");
     let mut peak: u32 = 0;
-    let mut lowest: u32 = 0;
+    let mut lowest: u32 = 4000;
     for season in seasons.season_results.values() {
         if season.highest > peak { peak = season.highest; }
         if season.lowest < lowest { lowest = season.lowest; }
