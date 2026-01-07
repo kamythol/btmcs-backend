@@ -32,7 +32,7 @@ pub struct Data {
 // }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct SeasonData {
+pub struct SeasonData { // elo values
     last: LastResult,
     pub(crate) highest: u32,
     pub(crate) lowest: u32,

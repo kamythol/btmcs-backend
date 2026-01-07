@@ -26,23 +26,35 @@ pub struct Counts {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Final {
-    deaths: u32,
-    matches: u32,
-    deaths_today: u32,
-    matches_today: u32,
     elo: u32,
-    elo_today: i32,
-    elo_peak_season: u32,
-    elo_lowest_season: u32,
-    elo_peak_overall: u32,
-    elo_lowest_overall: u32,
-    season_best: String,
-    all_best: String,
-    wins_today: u32,
-    draws_today: u32,
-    losses_today: u32,
-    ffs_season: u32,
-    ffs_today: u32
+    today: Today,
+    season: Season,
+    overall: Overall,
+}
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Today {
+    matches: u32,
+    deaths: u32,
+    elo: i32,
+    wins: u32,
+    draws: u32,
+    losses: u32,
+    forfeits: u32,
+}
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Season {
+    matches: u32,
+    deaths: u32,
+    elo_peak: u32,
+    elo_lowest: u32,
+    pb: String,
+    forfeits: u32,
+}
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Overall {
+    elo_peak: u32,
+    elo_lowest: u32,
+    pb: String,
 }
 const UUID: &str = "8a8174eb699a49fcb2299af5eede0992";
 
@@ -132,7 +144,7 @@ pub async fn get_counts() -> Counts {
     return Counts {matches, deaths, matches_today, deaths_today, elo_today, wins_today, draws_today, losses_today, ffs_season, ffs_today}
 }
 
-async fn get_overall_peaks() -> Vec<u32> {
+async fn get_overall_peaks() -> Vec<u32> { // peak elos
     let seasons = get_profile_seasons().await.expect("sea");
     let mut peak: u32 = 0;
     let mut lowest: u32 = 4000;
@@ -175,24 +187,33 @@ pub async fn create_data() -> Json<Final>{
     let all_best_ms = p.statistics.total.best_time.ranked.unwrap_or(0);
     let season_formatted = format!("{}:{:02}", season_best_ms / 1000 / 60, season_best_ms / 1000 % 60);
     let all_formatted = format!("{}:{:02}", all_best_ms / 1000 / 60, all_best_ms / 1000 % 60);
-    let a = Final {
-        deaths, 
-        matches, 
-        deaths_today, 
-        matches_today, 
-        elo: p.elo_rate.unwrap_or(0), 
-        elo_peak_season: p.season_result.highest.unwrap_or(0),
-        elo_lowest_season: p.season_result.lowest.unwrap_or(0),
-        elo_peak_overall: get_overall_peaks().await[0],
-        elo_lowest_overall: get_overall_peaks().await[1],
-        elo_today,
-        season_best: season_formatted, 
-        all_best: all_formatted,
-        wins_today,
-        losses_today,
-        draws_today,
-        ffs_season,
-        ffs_today
+    let a = Today {
+        matches: matches_today,
+        deaths: deaths_today,
+        elo: elo_today,
+        wins: wins_today,
+        draws: draws_today,
+        losses: losses_today,
+        forfeits: ffs_today
     };
-    return Json(a)
+    let b = Season {
+        matches,
+        deaths,
+        elo_peak: p.season_result.highest.unwrap_or(0),
+        elo_lowest: p.season_result.lowest.unwrap_or(0),
+        pb: season_formatted,
+        forfeits: ffs_season
+    };
+    let c = Overall {
+        elo_peak: get_overall_peaks().await[0],
+        elo_lowest: get_overall_peaks().await[1],
+        pb: all_formatted
+    };
+    let f = Final {
+        elo: p.elo_rate.unwrap_or(0),
+        today: a,
+        season: b,
+        overall: c
+    };
+    return Json(f)
 }
