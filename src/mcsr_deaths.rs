@@ -49,12 +49,7 @@ const UUID: &str = "8a8174eb699a49fcb2299af5eede0992";
 async fn get_match(match_id: u32, season: u8) -> Result<match_data::GameData, Error> {
     let req = format!("https://mcsrranked.com/api/matches/{}?season={}", match_id, season);
     let client = reqwest::Client::new();
-    let data = client
-        .get(req)
-        .send()
-        .await?
-        .json::<match_data::Response>()
-        .await?;
+    let data = client.get(req).send().await?.json::<match_data::Response>().await?;
     Ok(data.data)
 }
 
@@ -65,24 +60,14 @@ async fn get_history() -> Result<Vec<match_history::GameData>, Error> {
 
     let req = format!("https://mcsrranked.com/api/users/beasttrollmc/matches?count=100&type=2&after=4732008"); // 57
     let client = reqwest::Client::new();
-    let data = client
-        .get(req)
-        .send()
-        .await?
-        .json::<match_history::Response>()
-        .await?;
+    let data = client.get(req).send().await?.json::<match_history::Response>().await?;
     Ok(data.data)
 }
 
 async fn get_profile() -> Result<profile_data::Data, Error> {
     let req = format!("https://mcsrranked.com/api/users/beasttrollmc");
     let client = reqwest::Client::new();
-    let data = client
-        .get(req)
-        .send()
-        .await?
-        .json::<profile_data::Response>()
-        .await?;
+    let data = client.get(req).send().await?.json::<profile_data::Response>().await?;
     Ok(data.data)
 }
 
@@ -106,13 +91,14 @@ pub async fn get_counts() -> Counts {
     // offsets break todays, only update at 0 utc
     let mut matches: u32 = 57; // offset
     let mut deaths: u32 = 34; // offset
+    let mut ffs_season: u32 = 2; // offset
     let mut matches_today: u32 = 0;
     let mut deaths_today: u32 = 0;
     let mut elo_today: i32 = 0;
     let mut wins_today: u32 = 0;
     let mut draws_today: u32 = 0;
-    let mut ffs_season: u32 = 0;
     let mut ffs_today: u32 = 0;
+
     for m in mh {
         matches += 1;
         let t = Utc.timestamp_opt(m.date as i64, 0).unwrap();
@@ -132,22 +118,14 @@ pub async fn get_counts() -> Counts {
         }
         println!("Match {} S{} in {}m", m.id, m.season, m.result.time/1000/60);
         for timeline in gd.timelines {
-            if (timeline.timeline_type == tl_death) &&
-            (timeline.uuid == UUID.to_string()) {
+            if (timeline.timeline_type == tl_death) && (timeline.uuid == UUID.to_string()) {
                 // println!("{:?}", timeline);
-                if t.day() == current_utc.day() {
-                    deaths_today += 1;
-                }
+                if t.day() == current_utc.day() { deaths_today += 1; }
                 deaths += 1;
-            } else if (timeline.timeline_type == tl_forfeit) 
-            && (timeline.uuid == UUID.to_string()) {
-                if t.day() == current_utc.day() {
-                    ffs_today += 1;
-                }
+            } else if (timeline.timeline_type == tl_forfeit) && (timeline.uuid == UUID.to_string()) {
+                if t.day() == current_utc.day() { ffs_today += 1; }
                 ffs_season += 1;
-            } else {
-                continue;
-            }
+            } else { continue; }
         }
     }
     let losses_today = matches_today - wins_today;
