@@ -35,7 +35,7 @@ pub struct Data {
 pub struct SeasonData {
     last: LastResult,
     pub(crate) highest: u32,
-    lowest: u32,
+    pub(crate) lowest: u32,
     phases: Vec<Phase>,
 }
 

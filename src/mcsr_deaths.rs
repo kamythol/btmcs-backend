@@ -31,7 +31,9 @@ pub struct Final {
     elo: u32,
     elo_today: i32,
     elo_peak_season: u32,
+    elo_lowest_season: u32,
     elo_peak_overall: u32,
+    elo_lowest_overall: u32,
     season_best: String,
     all_best: String,
     wins_today: u32,
@@ -139,13 +141,15 @@ pub async fn get_counts() -> Counts {
     return Counts {matches, deaths, matches_today, deaths_today, elo_today, wins_today, draws_today, losses_today}
 }
 
-async fn get_overall_peak() -> u32 {
+async fn get_overall_peaks() -> Vec<u32> {
     let seasons = get_profile_seasons().await.expect("sea");
     let mut peak: u32 = 0;
+    let mut lowest: u32 = 0;
     for season in seasons.season_results.values() {
         if season.highest > peak { peak = season.highest; }
+        if season.lowest < lowest { lowest = season.lowest; }
     }
-    return peak
+    return vec![peak, lowest]
 }
 
 
@@ -174,10 +178,10 @@ pub async fn create_data() -> Json<Final>{
     let losses_today = counts.losses_today;
     let draws_today = counts.draws_today;
     // i have a headache rn i acn't figureout how to writ ethi sbetter
-    let season_best_ms = p.statistics.season.best_time.ranked;
-    let all_best_ms = p.statistics.total.best_time.ranked;
-    let season_formatted = format!("{}:{:02}", season_best_ms.unwrap_or(0) / 1000 / 60, season_best_ms.unwrap_or(0) / 1000 % 60);
-    let all_formatted = format!("{}:{:02}", all_best_ms.unwrap_or(0) / 1000 / 60, all_best_ms.unwrap_or(0) / 1000 % 60);
+    let season_best_ms = p.statistics.season.best_time.ranked.unwrap_or(0);
+    let all_best_ms = p.statistics.total.best_time.ranked.unwrap_or(0);
+    let season_formatted = format!("{}:{:02}", season_best_ms / 1000 / 60, season_best_ms / 1000 % 60);
+    let all_formatted = format!("{}:{:02}", all_best_ms / 1000 / 60, all_best_ms / 1000 % 60);
     let a = Final {
         deaths, 
         matches, 
@@ -185,7 +189,9 @@ pub async fn create_data() -> Json<Final>{
         matches_today, 
         elo: p.elo_rate.unwrap_or(0), 
         elo_peak_season: p.season_result.highest.unwrap_or(0),
-        elo_peak_overall: get_overall_peak().await,
+        elo_lowest_season: p.season_result.lowest.unwrap_or(0),
+        elo_peak_overall: get_overall_peaks().await[0],
+        elo_lowest_overall: get_overall_peaks().await[1],
         elo_today,
         season_best: season_formatted, 
         all_best: all_formatted,
