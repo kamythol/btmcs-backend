@@ -16,7 +16,7 @@ pub struct GameData {
     game_mode: String, 
     players: Vec<Player>,
     spectators: Vec<String>, 
-    result: ResultData,
+    pub(crate) result: ResultData,
     forfeited: bool,
     decayed: bool,
     rank: Rank,
@@ -57,7 +57,7 @@ pub struct Player {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ResultData {
-    uuid: Option<String>,
+    pub(crate) uuid: Option<String>, // winner uuid, null if draw
     time: u32,
 }
 

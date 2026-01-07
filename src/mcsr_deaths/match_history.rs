@@ -59,7 +59,7 @@ pub struct Player {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ResultData {
-    uuid: Option<String>,
+    pub(crate) uuid: Option<String>,
     pub(crate) time: u32,
 }
 

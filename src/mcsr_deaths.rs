@@ -11,6 +11,18 @@ mod profile_data;
 mod seasons_data;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Counts {
+    matches: u32,
+    deaths: u32,
+    matches_today: u32,
+    deaths_today: u32,
+    elo_today: i32,
+    wins_today: u32,
+    draws_today: u32,
+    losses_today: u32
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Final {
     deaths: u32,
     matches: u32,
@@ -22,6 +34,9 @@ pub struct Final {
     elo_peak_overall: u32,
     season_best: String,
     all_best: String,
+    wins_today: u32,
+    draws_today: u32,
+    losses_today: u32
 }
 const UUID: &str = "8a8174eb699a49fcb2299af5eede0992";
 
@@ -73,7 +88,7 @@ async fn get_profile_seasons() -> Result<seasons_data::Data, Error> {
 }
 
 #[cached(time = 120, sync_writes = "default")]
-pub async fn get_counts() -> Vec<u32> {
+pub async fn get_counts() -> Counts {
     let matchtext = "projectelo.timeline.death".to_string();
     let current_utc: DateTime<Utc> = Utc::now();
     let mh = get_history().await.expect("augh");
@@ -86,6 +101,8 @@ pub async fn get_counts() -> Vec<u32> {
     let mut matches_today: u32 = 0;
     let mut deaths_today: u32 = 0;
     let mut elo_today: i32 = 0;
+    let mut wins_today: u32 = 0;
+    let mut draws_today: u32 = 0;
     
     for m in mh {
         matches += 1;
@@ -98,11 +115,16 @@ pub async fn get_counts() -> Vec<u32> {
                     elo_today += p.change.unwrap_or(0);
                 }
             }
+            if m.result.uuid.clone().unwrap_or("augh".to_string()) == UUID.to_string() {
+                wins_today += 1;
+            } else if m.result.uuid == Option::None {
+                draws_today += 1;
+            }
         }
         println!("Match {} S{} in {}m", m.id, m.season, m.result.time/1000/60);
         for timeline in gd.timelines {
             if (timeline.timeline_type == matchtext) &&
-               (timeline.uuid == UUID.to_string()) {
+            (timeline.uuid == UUID.to_string()) {
                 // println!("{:?}", timeline);
                 if t.day() == current_utc.day() {
                     deaths_today += 1;
@@ -112,9 +134,9 @@ pub async fn get_counts() -> Vec<u32> {
                 continue;
             }
         }
-
     }
-    return vec![matches, deaths, matches_today, deaths_today, elo_today.try_into().unwrap()]
+    let losses_today = matches_today - wins_today;
+    return Counts {matches, deaths, matches_today, deaths_today, elo_today, wins_today, draws_today, losses_today}
 }
 
 async fn get_overall_peak() -> u32 {
@@ -131,8 +153,8 @@ async fn get_overall_peak() -> u32 {
 #[get("/deaths")]
 pub async fn deaths() -> String{
     let counts = get_counts().await;
-    let matches = counts[0];
-    let deaths = counts[1];
+    let matches = counts.matches;
+    let deaths = counts.deaths;
 
     let f = format!("{} deaths in {} matches", deaths, matches);
     return f
@@ -143,12 +165,15 @@ pub async fn deaths() -> String{
 pub async fn create_data() -> Json<Final>{
     let p = get_profile().await.expect("au");
     let counts = get_counts().await;
-    let matches = counts[0];
-    let deaths = counts[1];
-    let matches_today = counts[2];
-    let deaths_today = counts[3];
-    let elo_today: i32 = counts[4].try_into().unwrap();
-
+    let matches = counts.matches;
+    let deaths = counts.deaths;
+    let matches_today = counts.matches_today;
+    let deaths_today = counts.deaths_today;
+    let elo_today: i32 = counts.elo_today;
+    let wins_today = counts.wins_today;
+    let losses_today = counts.losses_today;
+    let draws_today = counts.draws_today;
+    // i have a headache rn i acn't figureout how to writ ethi sbetter
     let season_best_ms = p.statistics.season.best_time.ranked;
     let all_best_ms = p.statistics.total.best_time.ranked;
     let season_formatted = format!("{}:{:02}", season_best_ms.unwrap_or(0) / 1000 / 60, season_best_ms.unwrap_or(0) / 1000 % 60);
@@ -163,7 +188,10 @@ pub async fn create_data() -> Json<Final>{
         elo_peak_overall: get_overall_peak().await,
         elo_today,
         season_best: season_formatted, 
-        all_best: all_formatted
+        all_best: all_formatted,
+        wins_today,
+        losses_today,
+        draws_today
     };
     return Json(a)
 }
