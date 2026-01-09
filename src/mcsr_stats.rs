@@ -22,7 +22,9 @@ pub struct Counts {
     draws_today: u32,
     losses_today: u32,
     ffs_season: u32,
-    ffs_today: u32
+    ffs_today: u32,
+    ff_wins_season: u32,
+    ff_wins_today: u32
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -41,6 +43,7 @@ pub struct Today {
     draws: u32,
     losses: u32,
     forfeits: u32,
+    forfeit_wins: u32
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Season {
@@ -50,6 +53,7 @@ pub struct Season {
     elo_lowest: u32,
     pb: String,
     forfeits: u32,
+    forfeit_wins: u32
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Overall {
@@ -106,12 +110,15 @@ pub async fn get_counts() -> Counts {
     let mut matches: u32 = 57; // offset
     let mut deaths: u32 = 34; // offset
     let mut ffs_season: u32 = 2; // offset
+    let mut ff_wins_season: u32 = 5; // offset
+    
     let mut matches_today: u32 = 0;
     let mut deaths_today: u32 = 0;
     let mut elo_today: i32 = 0;
     let mut wins_today: u32 = 0;
     let mut draws_today: u32 = 0;
     let mut ffs_today: u32 = 0;
+    let mut ff_wins_today: u32 = 0;
 
     for m in mh {
         matches += 1;
@@ -136,14 +143,20 @@ pub async fn get_counts() -> Counts {
                 // println!("{:?}", timeline);
                 if t.day() == current_pst.day() { deaths_today += 1; }
                 deaths += 1;
-            } else if (timeline.timeline_type == tl_forfeit) && (timeline.uuid == UUID.to_string()) {
-                if t.day() == current_pst.day() { ffs_today += 1; }
-                ffs_season += 1;
+            } else if timeline.timeline_type == tl_forfeit {
+                println!("{} from {}", timeline.timeline_type, timeline.uuid);
+                if timeline.uuid == UUID.to_string() {
+                    if t.day() == current_pst.day() { ffs_today += 1; }
+                    ffs_season += 1;
+                } else {
+                    if t.day() == current_pst.day() { ff_wins_today += 1; }
+                    ff_wins_season += 1;
+                }
             } else { continue; }
         }
     }
     let losses_today = matches_today - wins_today - draws_today;
-    return Counts {matches, deaths, matches_today, deaths_today, elo_today, wins_today, draws_today, losses_today, ffs_season, ffs_today}
+    return Counts {matches, deaths, matches_today, deaths_today, elo_today, wins_today, draws_today, losses_today, ffs_season, ffs_today, ff_wins_season, ff_wins_today}
 }
 
 async fn get_overall_peaks() -> Vec<u32> { // peak elos
@@ -182,8 +195,6 @@ pub async fn create_data() -> Json<Final>{
     let wins_today = counts.wins_today;
     let losses_today = counts.losses_today;
     let draws_today = counts.draws_today;
-    let ffs_season = counts.ffs_season;
-    let ffs_today = counts.ffs_today;
     // i have a headache rn i acn't figureout how to writ ethi sbetter
     let season_best_ms = p.statistics.season.best_time.ranked.unwrap_or(0);
     let all_best_ms = p.statistics.total.best_time.ranked.unwrap_or(0);
@@ -196,7 +207,8 @@ pub async fn create_data() -> Json<Final>{
         wins: wins_today,
         draws: draws_today,
         losses: losses_today,
-        forfeits: ffs_today
+        forfeits: counts.ffs_today,
+        forfeit_wins: counts.ff_wins_today
     };
     let b = Season {
         matches,
@@ -204,7 +216,8 @@ pub async fn create_data() -> Json<Final>{
         elo_peak: p.season_result.highest.unwrap_or(0),
         elo_lowest: p.season_result.lowest.unwrap_or(0),
         pb: season_formatted,
-        forfeits: ffs_season
+        forfeits: counts.ffs_season,
+        forfeit_wins: counts.ff_wins_season
     };
     let c = Overall {
         elo_peak: get_overall_peaks().await[0],
