@@ -1,9 +1,10 @@
 use cached::proc_macro::cached;
 use anyhow::{Error, Result};
+use chrono_tz::{Tz, US::Pacific};
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 use tokio::time::{Instant, Duration};
-use chrono::prelude::*;
+use chrono::{prelude::*, TimeZone};
 
 mod match_data;
 mod match_history;
@@ -94,7 +95,8 @@ async fn get_profile_seasons() -> Result<seasons_data::Data, Error> {
 pub async fn get_counts() -> Counts {
     let tl_death = "projectelo.timeline.death".to_string();
     let tl_forfeit = "projectelo.timeline.forfeit".to_string();
-    let current_utc: DateTime<Utc> = Utc::now();
+    let current_pst: DateTime<Tz> = Utc::now().with_timezone(&Pacific);
+    
     let mh = get_history().await.expect("augh");
     // -- Season 9 -- //
     // let mut matches: u32 = 160; // match count offset - last: 100
@@ -113,9 +115,9 @@ pub async fn get_counts() -> Counts {
 
     for m in mh {
         matches += 1;
-        let t = Utc.timestamp_opt(m.date as i64, 0).unwrap();
+        let t = Utc.timestamp_opt(m.date as i64, 0).unwrap().with_timezone(&Pacific);
         let gd = get_match(m.id, m.season).await.unwrap();
-        if t.day() == current_utc.day() {
+        if t.day() == current_pst.day() {
             matches_today += 1;
             for p in gd.changes {
                 if p.uuid == UUID.to_string() {
@@ -132,10 +134,10 @@ pub async fn get_counts() -> Counts {
         for timeline in gd.timelines {
             if (timeline.timeline_type == tl_death) && (timeline.uuid == UUID.to_string()) {
                 // println!("{:?}", timeline);
-                if t.day() == current_utc.day() { deaths_today += 1; }
+                if t.day() == current_pst.day() { deaths_today += 1; }
                 deaths += 1;
             } else if (timeline.timeline_type == tl_forfeit) && (timeline.uuid == UUID.to_string()) {
-                if t.day() == current_utc.day() { ffs_today += 1; }
+                if t.day() == current_pst.day() { ffs_today += 1; }
                 ffs_season += 1;
             } else { continue; }
         }

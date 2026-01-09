@@ -7,6 +7,7 @@ edition = "2021"
 anyhow = "1.0.100"
 cached = { version = "0.56.0", features = ["async"] }
 chrono = "0.4.42"
+chrono-tz = "0.10.4"
 image = { version = "0.25.8", features = ["default-formats"] }
 lazy_static = "1.5.0"
 rand = "0.9.2"
