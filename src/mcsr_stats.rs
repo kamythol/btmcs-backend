@@ -142,7 +142,7 @@ pub async fn get_counts() -> Counts {
             } else { continue; }
         }
     }
-    let losses_today = matches_today - wins_today;
+    let losses_today = matches_today - wins_today - draws_today;
     return Counts {matches, deaths, matches_today, deaths_today, elo_today, wins_today, draws_today, losses_today, ffs_season, ffs_today}
 }
 
