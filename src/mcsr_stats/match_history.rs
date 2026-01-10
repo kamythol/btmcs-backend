@@ -18,7 +18,7 @@ pub struct GameData {
     players: Vec<Player>,
     spectators: Vec<Spectators>,
     pub(crate) result: ResultData,
-    forfeited: bool,
+    pub(crate) forfeited: bool,
     decayed: bool,
     rank: Rank,
     vod: Vec<Vod>,
