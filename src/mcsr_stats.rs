@@ -3,7 +3,7 @@ use anyhow::{Error, Result};
 use chrono_tz::{Tz, US::Pacific};
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
-use tokio::time::{Instant, Duration};
+use tokio::time::Duration;
 use chrono::{prelude::*, TimeZone};
 
 mod match_data;
@@ -24,7 +24,9 @@ pub struct Counts {
     ffs_season: u32,
     ffs_today: u32,
     ff_wins_season: u32,
-    ff_wins_today: u32
+    ff_wins_today: u32,
+    slowest_season: u32,
+    slowest_today: u32
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -43,7 +45,8 @@ pub struct Today {
     draws: u32,
     losses: u32,
     forfeits: u32,
-    forfeit_wins: u32
+    forfeit_wins: u32,
+    slowest: String,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Season {
@@ -53,7 +56,8 @@ pub struct Season {
     elo_lowest: u32,
     pb: String,
     forfeits: u32,
-    forfeit_wins: u32
+    forfeit_wins: u32,
+    slowest: String,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Overall {
@@ -111,6 +115,7 @@ pub async fn get_counts() -> Counts {
     let mut deaths: u32 = 34; // offset
     let mut ffs_season: u32 = 2; // offset
     let mut ff_wins_season: u32 = 5; // offset
+    let mut slowest_season: u32 = 0;
     
     let mut matches_today: u32 = 0;
     let mut deaths_today: u32 = 0;
@@ -119,6 +124,7 @@ pub async fn get_counts() -> Counts {
     let mut draws_today: u32 = 0;
     let mut ffs_today: u32 = 0;
     let mut ff_wins_today: u32 = 0;
+    let mut slowest_today: u32 = 0;
 
     for m in mh {
         matches += 1;
@@ -136,7 +142,9 @@ pub async fn get_counts() -> Counts {
             } else if m.result.uuid == Option::None {
                 draws_today += 1;
             }
+            if slowest_today < m.result.time { slowest_today = m.result.time; }
         }
+        if slowest_season < m.result.time { slowest_season = m.result.time; }
         println!("Match {} S{} in {}m", m.id, m.season, m.result.time/1000/60);
         for timeline in gd.timelines {
             if (timeline.timeline_type == tl_death) && (timeline.uuid == UUID.to_string()) {
@@ -154,9 +162,24 @@ pub async fn get_counts() -> Counts {
                 }
             } else { continue; }
         }
-    }
+    } // this shit is so ass wilted flower emoji
     let losses_today = matches_today - wins_today - draws_today;
-    return Counts {matches, deaths, matches_today, deaths_today, elo_today, wins_today, draws_today, losses_today, ffs_season, ffs_today, ff_wins_season, ff_wins_today}
+    return Counts {
+        matches, 
+        deaths, 
+        matches_today, 
+        deaths_today, 
+        elo_today, 
+        wins_today, 
+        draws_today, 
+        losses_today, 
+        ffs_season, 
+        ffs_today, 
+        ff_wins_season, 
+        ff_wins_today,
+        slowest_season,
+        slowest_today
+    }
 }
 
 async fn get_overall_peaks() -> Vec<u32> { // peak elos
@@ -189,40 +212,45 @@ pub async fn create_data() -> Json<Final>{
     let counts = get_counts().await;
     let matches = counts.matches;
     let deaths = counts.deaths;
-    let matches_today = counts.matches_today;
-    let deaths_today = counts.deaths_today;
     let elo_today: i32 = counts.elo_today;
     let wins_today = counts.wins_today;
     let losses_today = counts.losses_today;
     let draws_today = counts.draws_today;
-    // i have a headache rn i acn't figureout how to writ ethi sbetter
+    let slowest_season_ms = counts.slowest_season;
+    let slowest_today_ms = counts.slowest_today;
     let season_best_ms = p.statistics.season.best_time.ranked.unwrap_or(0);
     let all_best_ms = p.statistics.total.best_time.ranked.unwrap_or(0);
-    let season_formatted = format!("{}:{:02}", season_best_ms / 1000 / 60, season_best_ms / 1000 % 60);
-    let all_formatted = format!("{}:{:02}", all_best_ms / 1000 / 60, all_best_ms / 1000 % 60);
+    
+    let season_best_fmt = format!("{}:{:02}", season_best_ms / 1000 / 60, season_best_ms / 1000 % 60);
+    let all_best_fmt = format!("{}:{:02}", all_best_ms / 1000 / 60, all_best_ms / 1000 % 60);
+    let slowest_season_fmt = format!("{}:{:02}", slowest_season_ms / 1000 / 60, slowest_season_ms / 1000 % 60);
+    let slowest_today_fmt = format!("{}:{:02}", slowest_today_ms / 1000 / 60, slowest_today_ms / 1000 % 60);
+    
     let a = Today {
-        matches: matches_today,
-        deaths: deaths_today,
+        matches: counts.matches_today,
+        deaths: counts.deaths_today,
         elo: elo_today,
         wins: wins_today,
         draws: draws_today,
         losses: losses_today,
         forfeits: counts.ffs_today,
-        forfeit_wins: counts.ff_wins_today
+        forfeit_wins: counts.ff_wins_today,
+        slowest: slowest_today_fmt
     };
     let b = Season {
         matches,
         deaths,
         elo_peak: p.season_result.highest.unwrap_or(0),
         elo_lowest: p.season_result.lowest.unwrap_or(0),
-        pb: season_formatted,
+        pb: season_best_fmt,
         forfeits: counts.ffs_season,
-        forfeit_wins: counts.ff_wins_season
+        forfeit_wins: counts.ff_wins_season,
+        slowest: slowest_season_fmt
     };
     let c = Overall {
         elo_peak: get_overall_peaks().await[0],
         elo_lowest: get_overall_peaks().await[1],
-        pb: all_formatted
+        pb: all_best_fmt
     };
     let f = Final {
         elo: p.elo_rate.unwrap_or(0),
