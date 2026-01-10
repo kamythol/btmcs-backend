@@ -142,11 +142,11 @@ pub async fn get_counts() -> Counts {
             }
             if m.result.uuid.clone().unwrap_or("augh".to_string()) == UUID.to_string() {
                 wins_today += 1;
+                if fastest_today > m.result.time { fastest_today = m.result.time; }
             } else if m.result.uuid == Option::None {
                 draws_today += 1;
             }
             if slowest_today < m.result.time { slowest_today = m.result.time; }
-            if fastest_today > m.result.time { fastest_today = m.result.time; }
         }
         if slowest_season < m.result.time { slowest_season = m.result.time; }
         println!("Match {} S{} in {}m", m.id, m.season, m.result.time/1000/60);
