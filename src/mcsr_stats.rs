@@ -140,13 +140,13 @@ pub async fn get_counts() -> Counts {
                     elo_today += p.change.unwrap_or(0);
                 }
             }
-            if m.result.uuid.clone().unwrap_or("augh".to_string()) == UUID.to_string() {
+            if m.result.uuid.clone().unwrap_or("augh".to_string()) == UUID.to_string() { // win check
                 wins_today += 1;
                 if fastest_today > m.result.time && m.forfeited == false { fastest_today = m.result.time; }
+                if slowest_today < m.result.time { slowest_today = m.result.time; }
             } else if m.result.uuid == Option::None {
                 draws_today += 1;
             }
-            if slowest_today < m.result.time { slowest_today = m.result.time; }
         }
         if slowest_season < m.result.time { slowest_season = m.result.time; }
         println!("Match {} S{} in {}m", m.id, m.season, m.result.time/1000/60);
