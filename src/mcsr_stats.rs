@@ -81,7 +81,7 @@ async fn get_history() -> Result<Vec<match_history::GameData>, Error> {
     // let req = format!("https://mcsrranked.com/api/users/beasttrollmc/matches?count=100&type=2&after=4526605"); // 100
     // let req = format!("https://mcsrranked.com/api/users/beasttrollmc/matches?count=100&type=2&after=4424617"); // 160
 
-    let req = format!("https://mcsrranked.com/api/users/beasttrollmc/matches?count=100&type=2&after=4857369"); // 139
+    let req = format!("https://mcsrranked.com/api/users/beasttrollmc/matches?count=100&type=2&after=4977169"); // 212
     let client = reqwest::Client::new();
     let data = client.get(req).send().await?.json::<match_history::Response>().await?;
     Ok(data.data)
@@ -113,10 +113,10 @@ pub async fn get_counts() -> Counts {
     // let mut deaths: u32 = 135; // death count offset - last: 80
 
     // offsets break todays, only update at 0 utc
-    let mut matches: u32 = 139; // offset
-    let mut deaths: u32 = 87; // offset
-    let mut ffs_season: u32 = 4; // offset
-    let mut ff_wins_season: u32 = 12; // offset
+    let mut matches: u32 = 212; // offset
+    let mut deaths: u32 = 149; // offset
+    let mut ffs_season: u32 = 5; // offset
+    let mut ff_wins_season: u32 = 22; // offset
     let mut slowest_season: u32 = 0;
     
     let mut matches_today: u32 = 0;
