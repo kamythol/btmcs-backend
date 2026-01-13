@@ -135,35 +135,30 @@ pub async fn get_counts() -> Counts {
         let gd = get_match(m.id, m.season).await.unwrap();
         if t.day() == current_pst.day() {
             matches_today += 1;
-            for p in gd.changes {
-                if p.uuid == UUID.to_string() {
-                    elo_today += p.change.unwrap_or(0);
-                }
+            for plr in gd.changes {
+                if plr.uuid == UUID.to_string() { elo_today += plr.change.unwrap_or(0); }
             }
             if m.result.uuid.clone().unwrap_or("augh".to_string()) == UUID.to_string() { // win check
                 wins_today += 1;
                 if fastest_today > m.result.time && m.forfeited == false { fastest_today = m.result.time; }
                 if slowest_today < m.result.time { slowest_today = m.result.time; }
+                if m.forfeited == true { ff_wins_today += 1; }
             } else if m.result.uuid == Option::None {
                 draws_today += 1;
             }
         }
         if slowest_season < m.result.time { slowest_season = m.result.time; }
+        if (m.result.uuid.unwrap_or("a".to_string()) == UUID.to_string()) && (m.forfeited == true) {
+            ff_wins_season += 1;
+        }
         println!("Match {} S{} in {}m", m.id, m.season, m.result.time/1000/60);
         for timeline in gd.timelines {
             if (timeline.timeline_type == tl_death) && (timeline.uuid == UUID.to_string()) {
-                // println!("{:?}", timeline);
                 if t.day() == current_pst.day() { deaths_today += 1; }
                 deaths += 1;
-            } else if timeline.timeline_type == tl_forfeit {
-                println!("{} from {}", timeline.timeline_type, timeline.uuid);
-                if timeline.uuid == UUID.to_string() {
-                    if t.day() == current_pst.day() { ffs_today += 1; }
-                    ffs_season += 1;
-                } else {
-                    if t.day() == current_pst.day() { ff_wins_today += 1; }
-                    ff_wins_season += 1;
-                }
+            } else if timeline.timeline_type == tl_forfeit && (timeline.uuid == UUID.to_string()) {
+                if t.day() == current_pst.day() { ffs_today += 1; }
+                ffs_season += 1;
             } else { continue; }
         }
     } // this shit is so ass wilted flower emoji
