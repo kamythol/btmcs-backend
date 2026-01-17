@@ -226,8 +226,13 @@ pub async fn create_data() -> Json<Final>{
     let all_best_fmt = format!("{}:{:02}", all_best_ms / 1000 / 60, all_best_ms / 1000 % 60);
     let slowest_season_fmt = format!("{}:{:02}", slowest_season_ms / 1000 / 60, slowest_season_ms / 1000 % 60);
     let slowest_today_fmt = format!("{}:{:02}", slowest_today_ms / 1000 / 60, slowest_today_ms / 1000 % 60);
-    let fastest_today_fmt = format!("{}:{:02}", fastest_today_ms / 1000 / 60, fastest_today_ms / 1000 % 60);
     
+    let mut fastest_today_fmt: String;
+    if fastest_today_ms == 99999999 {
+        fastest_today_fmt = format!("6969:69");
+    } else {
+        fastest_today_fmt = format!("{}:{:02}", fastest_today_ms / 1000 / 60, fastest_today_ms / 1000 % 60);
+    }
     let a = Today {
         matches: counts.matches_today,
         deaths: counts.deaths_today,
