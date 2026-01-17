@@ -141,7 +141,7 @@ pub async fn get_counts() -> Counts {
             if m.result.uuid.clone().unwrap_or("augh".to_string()) == UUID.to_string() { // win check
                 wins_today += 1;
                 if fastest_today > m.result.time && m.forfeited == false { fastest_today = m.result.time; }
-                if slowest_today < m.result.time { slowest_today = m.result.time; }
+                if slowest_today < m.result.time && m.forfeited == false { slowest_today = m.result.time; }
                 if m.forfeited == true { ff_wins_today += 1; }
             } else if m.result.uuid == Option::None {
                 draws_today += 1;
