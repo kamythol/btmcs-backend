@@ -27,7 +27,9 @@ pub struct Counts {
     ff_wins_today: u32,
     slowest_season: u32,
     slowest_today: u32,
-    fastest_today: u32
+    fastest_today: u32,
+    resets_season: u32,
+    resets_today: u32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -48,7 +50,8 @@ pub struct Today {
     forfeits: u32,
     forfeit_wins: u32,
     slowest: String,
-    fastest: String
+    fastest: String,
+    resets: u32,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Season {
@@ -60,6 +63,7 @@ pub struct Season {
     forfeits: u32,
     forfeit_wins: u32,
     slowest: String,
+    resets: u32,
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Overall {
@@ -81,7 +85,8 @@ async fn get_history() -> Result<Vec<match_history::GameData>, Error> {
     // let req = format!("https://mcsrranked.com/api/users/beasttrollmc/matches?count=100&type=2&after=4526605"); // 100
     // let req = format!("https://mcsrranked.com/api/users/beasttrollmc/matches?count=100&type=2&after=4424617"); // 160
 
-    let req = format!("https://mcsrranked.com/api/users/beasttrollmc/matches?count=100&type=2&after=5208447"); // 286
+    let req = format!("https://mcsrranked.com/api/users/beasttrollmc/matches?count=100&type=2&after=5250971"); // 298
+
     let client = reqwest::Client::new();
     let data = client.get(req).send().await?.json::<match_history::Response>().await?;
     Ok(data.data)
@@ -109,8 +114,6 @@ async fn get_profile_seasons() -> Result<seasons_data::Data, Error> {
 
 #[cached(time = 120, sync_writes = "default")]
 pub async fn get_counts() -> Counts {
-    let tl_death = "projectelo.timeline.death".to_string();
-    let tl_forfeit = "projectelo.timeline.forfeit".to_string();
     let current_pst: DateTime<Tz> = Utc::now().with_timezone(&Pacific);
     
     let mh = get_history().await.expect("augh");
@@ -119,10 +122,11 @@ pub async fn get_counts() -> Counts {
     // let mut deaths: u32 = 135; // death count offset - last: 80
 
     // offsets break todays, only update at 0 pst
-    let mut matches: u32 = 286; // offset
-    let mut deaths: u32 = 211; // offset
+    let mut matches: u32 = 298; // offset
+    let mut deaths: u32 = 219; // offset
+    let mut resets_season: u32 = 151; // offset
     let mut ffs_season: u32 = 10; // offset
-    let mut ff_wins_season: u32 = 30; // offset
+    let mut ff_wins_season: u32 = 31; // offset
     let slowest_season: u32 = get_slowest().await.expect("a").first().unwrap().result.time;
     
     let mut matches_today: u32 = 0;
@@ -134,6 +138,7 @@ pub async fn get_counts() -> Counts {
     let mut ff_wins_today: u32 = 0;
     let mut slowest_today: u32 = 0;
     let mut fastest_today: u32 = 99999999;
+    let mut resets_today: u32 = 0;
 
     for m in mh {
         matches += 1;
@@ -158,12 +163,22 @@ pub async fn get_counts() -> Counts {
         }
         println!("Match {} S{} in {}m", m.id, m.season, m.result.time/1000/60);
         for timeline in gd.timelines {
-            if (timeline.timeline_type == tl_death) && (timeline.uuid == UUID.to_string()) {
-                if t.day() == current_pst.day() { deaths_today += 1; }
-                deaths += 1;
-            } else if timeline.timeline_type == tl_forfeit && (timeline.uuid == UUID.to_string()) {
-                if t.day() == current_pst.day() { ffs_today += 1; }
-                ffs_season += 1;
+            if timeline.uuid == UUID.to_string() {
+                match timeline.timeline_type.as_str() {
+                    "projectelo.timeline.reset" => {
+                        if t.day() == current_pst.day() { resets_today += 1; }
+                        resets_season += 1;
+                    }
+                    "projectelo.timeline.death" => {
+                        if t.day() == current_pst.day() { deaths_today += 1; }
+                        deaths += 1;
+                    }
+                    "projectelo.timeline.forfeit" => {
+                        if t.day() == current_pst.day() { ffs_today += 1; }
+                        ffs_season += 1;
+                    }
+                    _ => { }
+                }
             } else { continue; }
         }
     } // this shit is so ass wilted flower emoji
@@ -183,7 +198,9 @@ pub async fn get_counts() -> Counts {
         ff_wins_today,
         slowest_season,
         slowest_today,
-        fastest_today
+        fastest_today,
+        resets_season,
+        resets_today
     }
 }
 
@@ -232,7 +249,7 @@ pub async fn create_data() -> Json<Final>{
     let slowest_season_fmt = format!("{}:{:02}", slowest_season_ms / 1000 / 60, slowest_season_ms / 1000 % 60);
     let slowest_today_fmt = format!("{}:{:02}", slowest_today_ms / 1000 / 60, slowest_today_ms / 1000 % 60);
     
-    let mut fastest_today_fmt: String;
+    let fastest_today_fmt: String;
     if fastest_today_ms == 99999999 {
         fastest_today_fmt = format!("6969:69");
     } else {
@@ -248,7 +265,8 @@ pub async fn create_data() -> Json<Final>{
         forfeits: counts.ffs_today,
         forfeit_wins: counts.ff_wins_today,
         slowest: slowest_today_fmt,
-        fastest: fastest_today_fmt
+        fastest: fastest_today_fmt,
+        resets: counts.resets_today,
     };
     let b = Season {
         matches,
@@ -258,7 +276,8 @@ pub async fn create_data() -> Json<Final>{
         pb: season_best_fmt,
         forfeits: counts.ffs_season,
         forfeit_wins: counts.ff_wins_season,
-        slowest: slowest_season_fmt
+        slowest: slowest_season_fmt,
+        resets: counts.resets_season,
     };
     let c = Overall {
         elo_peak: get_overall_peaks().await[0],
