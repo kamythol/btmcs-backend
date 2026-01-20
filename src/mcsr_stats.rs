@@ -86,6 +86,12 @@ async fn get_history() -> Result<Vec<match_history::GameData>, Error> {
     let data = client.get(req).send().await?.json::<match_history::Response>().await?;
     Ok(data.data)
 }
+async fn get_slowest() -> Result<Vec<match_history::GameData>, Error> {
+    let req = format!("https://mcsrranked.com/api/users/beasttrollmc/matches?sort=slowest&count=1");
+    let client = reqwest::Client::new();
+    let data = client.get(req).send().await?.json::<match_history::Response>().await?;
+    Ok(data.data)
+}
 
 async fn get_profile() -> Result<profile_data::Data, Error> {
     let req = format!("https://mcsrranked.com/api/users/beasttrollmc");
@@ -117,7 +123,7 @@ pub async fn get_counts() -> Counts {
     let mut deaths: u32 = 211; // offset
     let mut ffs_season: u32 = 10; // offset
     let mut ff_wins_season: u32 = 30; // offset
-    let mut slowest_season: u32 = 0;
+    let slowest_season: u32 = get_slowest().await.expect("a").first().unwrap().result.time;
     
     let mut matches_today: u32 = 0;
     let mut deaths_today: u32 = 0;
@@ -147,7 +153,6 @@ pub async fn get_counts() -> Counts {
                 draws_today += 1;
             }
         }
-        if slowest_season < m.result.time { slowest_season = m.result.time; }
         if (m.result.uuid.unwrap_or("a".to_string()) == UUID.to_string()) && (m.forfeited == true) {
             ff_wins_season += 1;
         }
