@@ -30,6 +30,7 @@ pub struct Counts {
     fastest_today: u32,
     resets_season: u32,
     resets_today: u32,
+    avg_today: u32
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -52,6 +53,7 @@ pub struct Today {
     slowest: String,
     fastest: String,
     resets: u32,
+    avg: String
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Season {
@@ -139,6 +141,7 @@ pub async fn get_counts() -> Counts {
     let mut slowest_today: u32 = 0;
     let mut fastest_today: u32 = 99999999;
     let mut resets_today: u32 = 0;
+    let mut avg_today: u32 = 0;
 
     for m in mh {
         matches += 1;
@@ -151,6 +154,7 @@ pub async fn get_counts() -> Counts {
             }
             if m.result.uuid.clone().unwrap_or("augh".to_string()) == UUID.to_string() { // win check
                 wins_today += 1;
+                if m.forfeited == false { avg_today += m.result.time; }
                 if fastest_today > m.result.time && m.forfeited == false { fastest_today = m.result.time; }
                 if slowest_today < m.result.time && m.forfeited == false { slowest_today = m.result.time; }
                 if m.forfeited == true { ff_wins_today += 1; }
@@ -183,6 +187,7 @@ pub async fn get_counts() -> Counts {
         }
     } // this shit is so ass wilted flower emoji
     let losses_today = matches_today - wins_today - draws_today;
+    avg_today = avg_today / wins_today;
     return Counts {
         matches, 
         deaths, 
@@ -200,7 +205,8 @@ pub async fn get_counts() -> Counts {
         slowest_today,
         fastest_today,
         resets_season,
-        resets_today
+        resets_today,
+        avg_today
     }
 }
 
@@ -243,12 +249,13 @@ pub async fn create_data() -> Json<Final>{
     let fastest_today_ms = counts.fastest_today;
     let season_best_ms = p.statistics.season.best_time.ranked.unwrap_or(0);
     let all_best_ms = p.statistics.total.best_time.ranked.unwrap_or(0);
+    let avg_today_ms = counts.avg_today;
     
     let season_best_fmt = format!("{}:{:02}", season_best_ms / 1000 / 60, season_best_ms / 1000 % 60);
     let all_best_fmt = format!("{}:{:02}", all_best_ms / 1000 / 60, all_best_ms / 1000 % 60);
     let slowest_season_fmt = format!("{}:{:02}", slowest_season_ms / 1000 / 60, slowest_season_ms / 1000 % 60);
     let slowest_today_fmt = format!("{}:{:02}", slowest_today_ms / 1000 / 60, slowest_today_ms / 1000 % 60);
-    
+    let avg_today_fmt = format!("{}:{:02}", avg_today_ms / 1000 / 60, avg_today_ms / 1000 % 60);
     let fastest_today_fmt: String;
     if fastest_today_ms == 99999999 {
         fastest_today_fmt = format!("6969:69");
@@ -267,6 +274,7 @@ pub async fn create_data() -> Json<Final>{
         slowest: slowest_today_fmt,
         fastest: fastest_today_fmt,
         resets: counts.resets_today,
+        avg: avg_today_fmt
     };
     let b = Season {
         matches,
