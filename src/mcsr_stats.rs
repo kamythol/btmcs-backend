@@ -87,7 +87,7 @@ async fn get_history() -> Result<Vec<match_history::GameData>, Error> {
     // let req = format!("https://mcsrranked.com/api/users/beasttrollmc/matches?count=100&type=2&after=4526605"); // 100
     // let req = format!("https://mcsrranked.com/api/users/beasttrollmc/matches?count=100&type=2&after=4424617"); // 160
 
-    let req = format!("https://mcsrranked.com/api/users/beasttrollmc/matches?count=100&type=2&after=5250971"); // 298
+    let req = format!("https://mcsrranked.com/api/users/beasttrollmc/matches?count=100&type=2&after=5416047"); // 354
 
     let client = reqwest::Client::new();
     let data = client.get(req).send().await?.json::<match_history::Response>().await?;
@@ -124,11 +124,11 @@ pub async fn get_counts() -> Counts {
     // let mut deaths: u32 = 135; // death count offset - last: 80
 
     // offsets break todays, only update at 0 pst
-    let mut matches: u32 = 298; // offset
-    let mut deaths: u32 = 219; // offset
-    let mut resets_season: u32 = 151; // offset
-    let mut ffs_season: u32 = 10; // offset
-    let mut ff_wins_season: u32 = 31; // offset
+    let mut matches: u32 = 354; // offset
+    let mut deaths: u32 = 247; // offset
+    let mut ffs_season: u32 = 11; // offset
+    let mut ff_wins_season: u32 = 36; // offset
+    let mut resets_season: u32 = 164; // offset
     let slowest_season: u32 = get_slowest().await.expect("a").first().unwrap().result.time;
     
     let mut matches_today: u32 = 0;
@@ -187,7 +187,11 @@ pub async fn get_counts() -> Counts {
         }
     } // this shit is so ass wilted flower emoji
     let losses_today = matches_today - wins_today - draws_today;
-    avg_today = avg_today / wins_today;
+    if wins_today == 0 {
+        avg_today = avg_today / 1;
+    } else {
+        avg_today = avg_today / wins_today;
+    }
     return Counts {
         matches, 
         deaths, 
