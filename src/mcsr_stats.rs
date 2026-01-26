@@ -187,10 +187,10 @@ pub async fn get_counts() -> Counts {
         }
     } // this shit is so ass wilted flower emoji
     let losses_today = matches_today - wins_today - draws_today;
-    if wins_today == 0 {
+    if (wins_today == 0 || forfeit_wins == wins_today) {
         avg_today = avg_today / 1;
     } else {
-        avg_today = avg_today / wins_today;
+        avg_today = avg_today / (wins_today - forfeit_wins) ;
     }
     return Counts {
         matches, 
