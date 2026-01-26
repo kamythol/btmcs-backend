@@ -190,7 +190,7 @@ pub async fn get_counts() -> Counts {
     if (wins_today == 0 || forfeit_wins == wins_today) {
         avg_today = avg_today / 1;
     } else {
-        avg_today = avg_today / (wins_today - forfeit_wins) ;
+        avg_today = avg_today / (wins_today - ff_wins_today);
     }
     return Counts {
         matches, 
