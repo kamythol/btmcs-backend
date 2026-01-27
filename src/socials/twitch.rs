@@ -39,7 +39,7 @@ struct StreamInfo {
 #[derive(Serialize, Deserialize)]
 pub struct Stream {
     id: String,
-    stream_id: String,
+    stream_id: Option<String>,
     user_id: String,
     user_login: String,
     user_name: String,
@@ -98,8 +98,8 @@ async fn get_followers() -> Result<u64, anyhow::Error> {
     Ok(data.total)
 }
 
-async fn get_latest_stream() -> Result<Vec<Stream>, anyhow::Error> {
-    let req = format!("https://api.twitch.tv/helix/videos?user_id=46708418&first=1");
+async fn get_latest_streams() -> Result<Vec<Stream>, anyhow::Error> {
+    let req = format!("https://api.twitch.tv/helix/videos?user_id=46708418&first=50");
     let client = reqwest::Client::new();
     let data = client
         .get(req)
@@ -126,7 +126,7 @@ pub async fn followers() -> String { // follower count
 }
 
 #[get("/latest")]
-pub async fn latest_stream() -> Json<Vec<Stream>> { // latest stream info
-    let streaminfo = get_latest_stream().await.unwrap();
+pub async fn latest_streams() -> Json<Vec<Stream>> { // latest stream info
+    let streaminfo = get_latest_streams().await.unwrap();
     return Json(streaminfo)
 }

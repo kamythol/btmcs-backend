@@ -37,7 +37,7 @@ fn rocket() -> _ {
         .mount("/youtube", routes![YT::get_total_videos])
         .mount("/twitch", routes![Twitch::twitchinfo])
         .mount("/twitch", routes![Twitch::followers])
-        .mount("/twitch", routes![Twitch::latest_stream])
+        .mount("/twitch", routes![Twitch::latest_streams])
         .mount("/twitter", routes![Twitter::get_followers])
         .mount("/mcsr", routes![mcsr_stats::deaths])
         .mount("/mcsr", routes![mcsr_stats::create_data])
