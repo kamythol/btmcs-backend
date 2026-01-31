@@ -331,8 +331,8 @@ pub async fn session(offset: i64) -> Json<Session> {
     let mut avg_ms: u32 = 0;
 
     for m in mh {
-        let gd: match_data::GameData = get_match(m.id, m.season).await.unwrap();
         if m.date > offset as u64 {
+        let gd: match_data::GameData = get_match(m.id, m.season).await.unwrap();
             b.matches += 1;
             for plr in gd.changes {
                 if plr.uuid == uuid { b.elo += plr.change.unwrap_or(0); }
