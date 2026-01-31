@@ -319,7 +319,7 @@ pub async fn create_data() -> Json<Final>{
     return Json(f)
 }
 
-#[cached(time = 120, sync_writes = "default")]
+#[cached(time = 180, sync_writes = "default")]
 #[get("/session/<offset>")]
 pub async fn session(offset: i64) -> Json<Session> {
     let mut b = Session { ..Default::default() };
