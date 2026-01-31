@@ -11,7 +11,7 @@ mod match_history;
 mod profile_data;
 mod seasons_data;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Counts {
     matches: u32,
     deaths: u32,
@@ -73,7 +73,31 @@ pub struct Overall {
     elo_lowest: u32,
     pb: String,
 }
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct Session {
+    matches: u32,
+    deaths: u32,
+    elo: i32,
+    wins: u32,
+    draws: u32,
+    losses: u32,
+    forfeits: u32,
+    forfeit_wins: u32,
+    slowest: String,
+    fastest: String,
+    resets: u32,
+    avg: String
+}
+
 const UUID: &str = "8a8174eb699a49fcb2299af5eede0992";
+// offsets break todays, only update at 0 pst
+const MATCH_OFFSET: u32 = 421;
+const DEATH_OFFSET: u32 = 289;
+const FFS_SEASON_OFFSET: u32 = 11;
+const FF_WINS_SEASON_OFFSET: u32 = 41;
+const RESETS_SEASON_OFFSET: u32 = 190;
+const ID_OFFSET: &str = "5611569"; // 421
+
 
 async fn get_match(match_id: u32, season: u8) -> Result<match_data::GameData, Error> {
     let req = format!("https://mcsrranked.com/api/matches/{}?season={}", match_id, season);
@@ -87,7 +111,7 @@ async fn get_history() -> Result<Vec<match_history::GameData>, Error> {
     // let req = format!("https://mcsrranked.com/api/users/beasttrollmc/matches?count=100&type=2&after=4526605"); // 100
     // let req = format!("https://mcsrranked.com/api/users/beasttrollmc/matches?count=100&type=2&after=4424617"); // 160
 
-    let req = format!("https://mcsrranked.com/api/users/beasttrollmc/matches?count=100&type=2&after=5611569"); // 421
+    let req = format!("https://mcsrranked.com/api/users/beasttrollmc/matches?count=100&type=2&after={}", ID_OFFSET);
 
     let client = reqwest::Client::new();
     let data = client.get(req).send().await?.json::<match_history::Response>().await?;
@@ -117,100 +141,91 @@ async fn get_profile_seasons() -> Result<seasons_data::Data, Error> {
 #[cached(time = 120, sync_writes = "default")]
 pub async fn get_counts() -> Counts {
     let current_pst: DateTime<Tz> = Utc::now().with_timezone(&Pacific);
-    
+    let uuid = UUID.to_string();
     let mh = get_history().await.expect("augh");
     // -- Season 9 -- //
     // let mut matches: u32 = 160; // match count offset - last: 100
     // let mut deaths: u32 = 135; // death count offset - last: 80
 
-    // offsets break todays, only update at 0 pst
-    let mut matches: u32 = 421; // offset
-    let mut deaths: u32 = 289; // offset
-    let mut ffs_season: u32 = 11; // offset
-    let mut ff_wins_season: u32 = 41; // offset
-    let mut resets_season: u32 = 190; // offset
     let slowest_season: u32 = get_slowest().await.expect("a").first().unwrap().result.time;
     
-    let mut matches_today: u32 = 0;
-    let mut deaths_today: u32 = 0;
-    let mut elo_today: i32 = 0;
-    let mut wins_today: u32 = 0;
-    let mut draws_today: u32 = 0;
-    let mut ffs_today: u32 = 0;
-    let mut ff_wins_today: u32 = 0;
-    let mut slowest_today: u32 = 0;
-    let mut fastest_today: u32 = 99999999;
-    let mut resets_today: u32 = 0;
-    let mut avg_today: u32 = 0;
-
+    let mut b = Counts {
+        matches: MATCH_OFFSET,
+        deaths: DEATH_OFFSET,
+        ffs_season: FFS_SEASON_OFFSET,
+        ff_wins_season: FF_WINS_SEASON_OFFSET,
+        resets_season: RESETS_SEASON_OFFSET,
+        slowest_season,
+        fastest_today: 99999999,
+        ..Default::default()
+    };
     for m in mh {
-        matches += 1;
+        b.matches += 1;
         let t = Utc.timestamp_opt(m.date as i64, 0).unwrap().with_timezone(&Pacific);
         let gd = get_match(m.id, m.season).await.unwrap();
         if t.day() == current_pst.day() {
-            matches_today += 1;
+            b.matches_today += 1;
             for plr in gd.changes {
-                if plr.uuid == UUID.to_string() { elo_today += plr.change.unwrap_or(0); }
+                if plr.uuid == uuid { b.elo_today += plr.change.unwrap_or(0); }
             }
-            if m.result.uuid.clone().unwrap_or("augh".to_string()) == UUID.to_string() { // win check
-                wins_today += 1;
-                if m.forfeited == false { avg_today += m.result.time; }
-                if fastest_today > m.result.time && m.forfeited == false { fastest_today = m.result.time; }
-                if slowest_today < m.result.time && m.forfeited == false { slowest_today = m.result.time; }
-                if m.forfeited == true { ff_wins_today += 1; }
+            if m.result.uuid.clone().unwrap_or("augh".to_string()) == uuid { // win check
+                b.wins_today += 1;
+                if m.forfeited == false { b.avg_today += m.result.time; }
+                if b.fastest_today > m.result.time && m.forfeited == false { b.fastest_today = m.result.time; }
+                if b.slowest_today < m.result.time && m.forfeited == false { b.slowest_today = m.result.time; }
+                if m.forfeited == true { b.ff_wins_today += 1; }
             } else if m.result.uuid == Option::None {
-                draws_today += 1;
+                b.draws_today += 1;
             }
         }
-        if (m.result.uuid.unwrap_or("a".to_string()) == UUID.to_string()) && (m.forfeited == true) {
-            ff_wins_season += 1;
+        if (m.result.uuid.unwrap_or("a".to_string()) == uuid) && (m.forfeited == true) {
+            b.ff_wins_season += 1;
         }
         println!("Match {} S{} in {}m", m.id, m.season, m.result.time/1000/60);
         for timeline in gd.timelines {
-            if timeline.uuid == UUID.to_string() {
-                match timeline.timeline_type.as_str() {
-                    "projectelo.timeline.reset" => {
-                        if t.day() == current_pst.day() { resets_today += 1; }
-                        resets_season += 1;
-                    }
-                    "projectelo.timeline.death" => {
-                        if t.day() == current_pst.day() { deaths_today += 1; }
-                        deaths += 1;
-                    }
-                    "projectelo.timeline.forfeit" => {
-                        if t.day() == current_pst.day() { ffs_today += 1; }
-                        ffs_season += 1;
-                    }
-                    _ => { }
+            if timeline.uuid != uuid { continue; }
+            match timeline.timeline_type.as_str() {
+                "projectelo.timeline.reset" => {
+                    if t.day() == current_pst.day() { b.resets_today += 1; }
+                    b.resets_season += 1;
                 }
-            } else { continue; }
+                "projectelo.timeline.death" => {
+                    if t.day() == current_pst.day() { b.deaths_today += 1; }
+                    b.deaths += 1;
+                }
+                "projectelo.timeline.forfeit" => {
+                    if t.day() == current_pst.day() { b.ffs_today += 1; }
+                    b.ffs_season += 1;
+                }
+                _ => { }
+            }
         }
     } // this shit is so ass wilted flower emoji
-    let losses_today = matches_today - wins_today - draws_today;
-    if wins_today == 0 || ff_wins_today == wins_today {
-        avg_today = avg_today / 1;
+    b.losses_today = b.matches_today - b.wins_today - b.draws_today;
+    if b.wins_today == 0 || b.ff_wins_today == b.wins_today {
+        b.avg_today = b.avg_today / 1;
     } else {
-        avg_today = avg_today / (wins_today - ff_wins_today);
+        b.avg_today = b.avg_today / (b.wins_today - b.ff_wins_today);
     }
     return Counts {
-        matches, 
-        deaths, 
-        matches_today, 
-        deaths_today, 
-        elo_today, 
-        wins_today, 
-        draws_today, 
-        losses_today, 
-        ffs_season, 
-        ffs_today, 
-        ff_wins_season, 
-        ff_wins_today,
-        slowest_season,
-        slowest_today,
-        fastest_today,
-        resets_season,
-        resets_today,
-        avg_today
+        matches: b.matches, 
+        deaths: b.deaths, 
+        matches_today: b.matches_today, 
+        deaths_today: b.deaths_today, 
+        elo_today: b.elo_today, 
+        wins_today: b.wins_today, 
+        draws_today: b.draws_today, 
+        losses_today: b.losses_today, 
+        ffs_season: b.ffs_season, 
+        ffs_today: b.ffs_today, 
+        ff_wins_season: b.ff_wins_season, 
+        ff_wins_today: b.ff_wins_today,
+        slowest_season: b.slowest_season,
+        slowest_today: b.slowest_today,
+        fastest_today: b.fastest_today,
+        resets_season: b.resets_season,
+        resets_today: b.resets_today,
+        avg_today: b.avg_today
     }
 }
 
@@ -224,7 +239,6 @@ async fn get_overall_peaks() -> Vec<u32> { // peak elos
     }
     return vec![peak, lowest]
 }
-
 
 #[cached(time = 120, sync_writes = "default")]
 #[get("/deaths")]
@@ -303,4 +317,80 @@ pub async fn create_data() -> Json<Final>{
         overall: c
     };
     return Json(f)
+}
+
+#[cached(time = 120, sync_writes = "default")]
+#[get("/session?<offset>")]
+pub async fn session(offset: i64) -> Json<Session> {
+    let mut b = Session { ..Default::default() };
+    let uuid = UUID.to_string();
+    let mh = get_history().await.expect("augh");
+
+    let mut fastest_ms: u32 = 99999999;
+    let mut slowest_ms: u32 = 0;
+    let mut avg_ms: u32 = 0;
+
+    for m in mh {
+        let gd: match_data::GameData = get_match(m.id, m.season).await.unwrap();
+        if m.date > offset as u64 {
+            b.matches += 1;
+            for plr in gd.changes {
+                if plr.uuid == uuid { b.elo += plr.change.unwrap_or(0); }
+            }
+            if m.result.uuid.clone().unwrap_or("augh".to_string()) == uuid { // win check
+                b.wins += 1;
+                if m.forfeited == false { avg_ms += m.result.time; }
+                if fastest_ms > m.result.time && m.forfeited == false { fastest_ms = m.result.time; }
+                if slowest_ms < m.result.time && m.forfeited == false { slowest_ms = m.result.time; }
+                if m.forfeited == true { b.forfeit_wins += 1; }
+            } else if m.result.uuid == Option::None {
+                b.draws += 1;
+            }
+        
+            println!("Match {} S{} in {}m", m.id, m.season, m.result.time/1000/60);
+            for timeline in gd.timelines {
+                if timeline.uuid != uuid { continue; }
+                match timeline.timeline_type.as_str() {
+                    "projectelo.timeline.reset" => {
+                        b.resets += 1;
+                    }
+                    "projectelo.timeline.death" => {
+                        b.deaths += 1;
+                    }
+                    "projectelo.timeline.forfeit" => {
+                        b.forfeits += 1;
+                    }
+                    _ => { }
+                }
+            }
+        }
+    } // this shit is so ass wilted flower emoji
+    b.losses = b.matches - b.wins - b.draws;
+    if b.wins == 0 || b.forfeit_wins == b.wins {
+        avg_ms = avg_ms / 1;
+    } else {
+        avg_ms = avg_ms / (b.wins - b.forfeit_wins);
+    }
+    let slowest_today_fmt = format!("{}:{:02}", slowest_ms / 1000 / 60, slowest_ms / 1000 % 60);
+    let avg_today_fmt = format!("{}:{:02}", avg_ms / 1000 / 60, avg_ms / 1000 % 60);
+    let fastest_today_fmt: String;
+    if fastest_ms == 99999999 {
+        fastest_today_fmt = format!("6969:69");
+    } else {
+        fastest_today_fmt = format!("{}:{:02}", fastest_ms / 1000 / 60, fastest_ms / 1000 % 60);
+    }
+    return Json(Session {
+        matches: b.matches,
+        deaths: b.deaths,
+        elo: b.elo,
+        wins: b.wins,
+        draws: b.draws,
+        losses: b.losses,
+        forfeits: b.forfeits,
+        forfeit_wins: b.forfeit_wins,
+        slowest: slowest_today_fmt,
+        fastest: fastest_today_fmt,
+        resets: b.resets,
+        avg: avg_today_fmt
+    })
 }

@@ -41,4 +41,5 @@ fn rocket() -> _ {
         .mount("/twitter", routes![Twitter::get_followers])
         .mount("/mcsr", routes![mcsr_stats::deaths])
         .mount("/mcsr", routes![mcsr_stats::create_data])
+        .mount("/mcsr", routes![mcsr_stats::session])
 }
