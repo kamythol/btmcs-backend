@@ -320,7 +320,7 @@ pub async fn create_data() -> Json<Final>{
 }
 
 #[cached(time = 120, sync_writes = "default")]
-#[get("/session?<offset>")]
+#[get("/session/<offset>")]
 pub async fn session(offset: i64) -> Json<Session> {
     let mut b = Session { ..Default::default() };
     let uuid = UUID.to_string();
