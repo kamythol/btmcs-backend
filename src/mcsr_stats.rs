@@ -91,12 +91,12 @@ pub struct Session {
 
 const UUID: &str = "8a8174eb699a49fcb2299af5eede0992";
 // offsets break todays, only update at 0 pst
-const MATCH_OFFSET: u32 = 421;
-const DEATH_OFFSET: u32 = 289;
+const MATCH_OFFSET: u32 = 478;
+const DEATH_OFFSET: u32 = 323;
 const FFS_SEASON_OFFSET: u32 = 11;
-const FF_WINS_SEASON_OFFSET: u32 = 41;
-const RESETS_SEASON_OFFSET: u32 = 190;
-const ID_OFFSET: &str = "5611569"; // 421
+const FF_WINS_SEASON_OFFSET: u32 = 43;
+const RESETS_SEASON_OFFSET: u32 = 212;
+const ID_OFFSET: &str = "5772958"; // 478
 
 
 async fn get_match(match_id: u32, season: u8) -> Result<match_data::GameData, Error> {
