@@ -285,8 +285,8 @@ pub async fn create_data() -> Json<Final>{
         resets: counts.resets_season,
         death_wins: counts.death_wins,
         deathless_wins: counts.deathless_wins,
-        wins: p.SeasonStatistics.wins;
-        losses: p.SeasonStatistics.losses;
+        wins: p.SeasonStatistics.wins,
+        losses: p.SeasonStatistics.losses,
         rank: p.elo_rank.unwrap_or(6969)
 
     };
