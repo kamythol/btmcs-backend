@@ -13,7 +13,7 @@ pub struct Data {
     nickname: String,
     role_type: u32,
     pub(crate) elo_rate: Option<u32>,
-    elo_rank: Option<u32>,
+    pub(crate) elo_rank: Option<u32>,
     achievements: Achievements,
     timestamp: Timestamp,
     pub(crate) statistics: Statistics,
