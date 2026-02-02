@@ -65,8 +65,8 @@ pub struct SeasonStatistics {
     completion_time: CompletionTime,
     forfeits: Forfeits,
     completions: Completions,
-    wins: Matches,
-    loses: Matches,
+    pub(crate) wins: Matches,
+    pub(crate) loses: Matches,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -98,7 +98,7 @@ pub struct WinStreak {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Matches {
-    ranked: u32,
+    pub(crate) ranked: u32,
     casual: Option<u32>,
 }
 

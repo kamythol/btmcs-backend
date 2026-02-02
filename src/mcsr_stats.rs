@@ -67,7 +67,8 @@ pub struct Season {
     death_wins: u32,
     deathless_wins: u32,
     wins: u32,
-    losses: u32
+    losses: u32,
+    rank: u32
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Overall {
@@ -285,8 +286,8 @@ pub async fn create_data() -> Json<Final>{
         resets: counts.resets_season,
         death_wins: counts.death_wins,
         deathless_wins: counts.deathless_wins,
-        wins: p.SeasonStatistics.wins,
-        losses: p.SeasonStatistics.losses,
+        wins: p.statistics.season.wins.ranked,
+        losses: p.statistics.season.loses.ranked,
         rank: p.elo_rank.unwrap_or(6969)
 
     };
