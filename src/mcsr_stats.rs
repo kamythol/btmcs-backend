@@ -66,6 +66,8 @@ pub struct Season {
     resets: u32,
     death_wins: u32,
     deathless_wins: u32
+    wins: u32,
+    losses: u32
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Overall {
@@ -91,11 +93,11 @@ pub struct Session {
 
 const UUID: &str = "8a8174eb699a49fcb2299af5eede0992";
 // offsets break todays, only update at 0 pst
-const MATCH_OFFSET: u32 = 478;
-const DEATH_OFFSET: u32 = 323;
-const FFS_SEASON_OFFSET: u32 = 11;
-const FF_WINS_SEASON_OFFSET: u32 = 43;
-const RESETS_SEASON_OFFSET: u32 = 212;
+const MATCH_OFFSET: u32 = 544;
+const DEATH_OFFSET: u32 = 366;
+const FFS_SEASON_OFFSET: u32 = 12;
+const FF_WINS_SEASON_OFFSET: u32 = 46;
+const RESETS_SEASON_OFFSET: u32 = 226;
 
 
 
@@ -282,7 +284,11 @@ pub async fn create_data() -> Json<Final>{
         slowest: slowest_season_fmt,
         resets: counts.resets_season,
         death_wins: counts.death_wins,
-        deathless_wins: counts.deathless_wins
+        deathless_wins: counts.deathless_wins,
+        wins: p.SeasonStatistics.wins;
+        losses: p.SeasonStatistics.losses;
+        rank: p.elo_rank.unwrap_or(6969)
+
     };
     let c = Overall {
         elo_peak: get_overall_peaks().await[0],
