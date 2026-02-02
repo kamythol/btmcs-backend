@@ -1,15 +1,11 @@
 use cached::proc_macro::cached;
-use anyhow::{Error, Result};
 use chrono_tz::{Tz, US::Pacific};
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 use tokio::time::Duration;
 use chrono::{prelude::*, TimeZone};
 
-mod match_data;
-mod match_history;
-mod profile_data;
-mod seasons_data;
+use crate::mcsr::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Counts {
@@ -30,7 +26,9 @@ pub struct Counts {
     fastest_today: u32,
     resets_season: u32,
     resets_today: u32,
-    avg_today: u32
+    avg_today: u32,
+    death_wins: u32,
+    deathless_wins: u32
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -66,6 +64,8 @@ pub struct Season {
     forfeit_wins: u32,
     slowest: String,
     resets: u32,
+    death_wins: u32,
+    deathless_wins: u32
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Overall {
@@ -85,8 +85,8 @@ pub struct Session {
     forfeit_wins: u32,
     slowest: String,
     fastest: String,
+    avg: String,
     resets: u32,
-    avg: String
 }
 
 const UUID: &str = "8a8174eb699a49fcb2299af5eede0992";
@@ -96,47 +96,8 @@ const DEATH_OFFSET: u32 = 323;
 const FFS_SEASON_OFFSET: u32 = 11;
 const FF_WINS_SEASON_OFFSET: u32 = 43;
 const RESETS_SEASON_OFFSET: u32 = 212;
-const ID_OFFSET: &str = "5772958"; // 478
 
 
-async fn get_match(match_id: u32, season: u8) -> Result<match_data::GameData, Error> {
-    let req = format!("https://mcsrranked.com/api/matches/{}?season={}", match_id, season);
-    let client = reqwest::Client::new();
-    let data = client.get(req).send().await?.json::<match_data::Response>().await?;
-    Ok(data.data)
-}
-
-async fn get_history() -> Result<Vec<match_history::GameData>, Error> {
-    // -- Season 9 -- //
-    // let req = format!("https://mcsrranked.com/api/users/beasttrollmc/matches?count=100&type=2&after=4526605"); // 100
-    // let req = format!("https://mcsrranked.com/api/users/beasttrollmc/matches?count=100&type=2&after=4424617"); // 160
-
-    let req = format!("https://mcsrranked.com/api/users/beasttrollmc/matches?count=100&type=2&after={}", ID_OFFSET);
-
-    let client = reqwest::Client::new();
-    let data = client.get(req).send().await?.json::<match_history::Response>().await?;
-    Ok(data.data)
-}
-async fn get_slowest() -> Result<Vec<match_history::GameData>, Error> {
-    let req = format!("https://mcsrranked.com/api/users/beasttrollmc/matches?sort=slowest&count=1");
-    let client = reqwest::Client::new();
-    let data = client.get(req).send().await?.json::<match_history::Response>().await?;
-    Ok(data.data)
-}
-
-async fn get_profile() -> Result<profile_data::Data, Error> {
-    let req = format!("https://mcsrranked.com/api/users/beasttrollmc");
-    let client = reqwest::Client::new();
-    let data = client.get(req).send().await?.json::<profile_data::Response>().await?;
-    Ok(data.data)
-}
-
-async fn get_profile_seasons() -> Result<seasons_data::Data, Error> {
-    let req = format!("https://mcsrranked.com/api/users/beasttrollmc/seasons");
-    let client = reqwest::Client::new();
-    let data = client.get(req).send().await?.json::<seasons_data::Response>().await?;
-    Ok(data.data)
-}
 
 #[cached(time = 120, sync_writes = "default")]
 pub async fn get_counts() -> Counts {
@@ -163,25 +124,31 @@ pub async fn get_counts() -> Counts {
         b.matches += 1;
         let t = Utc.timestamp_opt(m.date as i64, 0).unwrap().with_timezone(&Pacific);
         let gd = get_match(m.id, m.season).await.unwrap();
+        let is_win = m.result.uuid.clone().unwrap_or_else(|| "augh".to_string()) == uuid;
+
         if t.day() == current_pst.day() {
             b.matches_today += 1;
             for plr in gd.changes {
                 if plr.uuid == uuid { b.elo_today += plr.change.unwrap_or(0); }
             }
-            if m.result.uuid.clone().unwrap_or("augh".to_string()) == uuid { // win check
+            if is_win { // win check
                 b.wins_today += 1;
-                if m.forfeited == false { b.avg_today += m.result.time; }
-                if b.fastest_today > m.result.time && m.forfeited == false { b.fastest_today = m.result.time; }
-                if b.slowest_today < m.result.time && m.forfeited == false { b.slowest_today = m.result.time; }
-                if m.forfeited == true { b.ff_wins_today += 1; }
+                if !m.forfeited {
+                    b.avg_today += m.result.time;
+                    if b.fastest_today > m.result.time { b.fastest_today = m.result.time; }
+                    if b.slowest_today < m.result.time { b.slowest_today = m.result.time; }
+                } else {
+                    b.ff_wins_today += 1; 
+                }
             } else if m.result.uuid == Option::None {
                 b.draws_today += 1;
             }
         }
-        if (m.result.uuid.unwrap_or("a".to_string()) == uuid) && (m.forfeited == true) {
+        if (is_win) && (m.forfeited == true) {
             b.ff_wins_season += 1;
         }
         println!("Match {} S{} in {}m", m.id, m.season, m.result.time/1000/60);
+        let mut has_death = false;
         for timeline in gd.timelines {
             if timeline.uuid != uuid { continue; }
             match timeline.timeline_type.as_str() {
@@ -190,6 +157,7 @@ pub async fn get_counts() -> Counts {
                     b.resets_season += 1;
                 }
                 "projectelo.timeline.death" => {
+                    has_death = true;
                     if t.day() == current_pst.day() { b.deaths_today += 1; }
                     b.deaths += 1;
                 }
@@ -198,6 +166,13 @@ pub async fn get_counts() -> Counts {
                     b.ffs_season += 1;
                 }
                 _ => { }
+            }
+        }
+        if is_win {
+            if has_death {
+                b.death_wins += 1;
+            } else {
+                b.deathless_wins += 1;
             }
         }
     } // this shit is so ass wilted flower emoji
@@ -225,7 +200,9 @@ pub async fn get_counts() -> Counts {
         fastest_today: b.fastest_today,
         resets_season: b.resets_season,
         resets_today: b.resets_today,
-        avg_today: b.avg_today
+        avg_today: b.avg_today,
+        death_wins: b.death_wins,
+        deathless_wins: b.deathless_wins
     }
 }
 
@@ -304,6 +281,8 @@ pub async fn create_data() -> Json<Final>{
         forfeit_wins: counts.ff_wins_season,
         slowest: slowest_season_fmt,
         resets: counts.resets_season,
+        death_wins: counts.death_wins,
+        deathless_wins: counts.deathless_wins
     };
     let c = Overall {
         elo_peak: get_overall_peaks().await[0],
@@ -332,21 +311,24 @@ pub async fn session(offset: i64) -> Json<Session> {
 
     for m in mh {
         if m.date > offset as u64 {
+        let is_win = m.result.uuid.clone().unwrap_or_else(|| "augh".to_string()) == uuid;
         let gd: match_data::GameData = get_match(m.id, m.season).await.unwrap();
             b.matches += 1;
             for plr in gd.changes {
                 if plr.uuid == uuid { b.elo += plr.change.unwrap_or(0); }
             }
-            if m.result.uuid.clone().unwrap_or("augh".to_string()) == uuid { // win check
+            if is_win { // win check
                 b.wins += 1;
-                if m.forfeited == false { avg_ms += m.result.time; }
-                if fastest_ms > m.result.time && m.forfeited == false { fastest_ms = m.result.time; }
-                if slowest_ms < m.result.time && m.forfeited == false { slowest_ms = m.result.time; }
-                if m.forfeited == true { b.forfeit_wins += 1; }
+                if !m.forfeited {
+                    avg_ms += m.result.time;
+                    if fastest_ms > m.result.time { fastest_ms = m.result.time; }
+                    if slowest_ms < m.result.time { slowest_ms = m.result.time; }
+                } else {
+                    b.forfeit_wins += 1; 
+                }
             } else if m.result.uuid == Option::None {
                 b.draws += 1;
             }
-        
             println!("Match {} S{} in {}m", m.id, m.season, m.result.time/1000/60);
             for timeline in gd.timelines {
                 if timeline.uuid != uuid { continue; }
@@ -374,10 +356,9 @@ pub async fn session(offset: i64) -> Json<Session> {
     let slowest_today_fmt = format!("{}:{:02}", slowest_ms / 1000 / 60, slowest_ms / 1000 % 60);
     let avg_today_fmt = format!("{}:{:02}", avg_ms / 1000 / 60, avg_ms / 1000 % 60);
     let fastest_today_fmt: String;
-    if fastest_ms == 99999999 {
-        fastest_today_fmt = format!("6969:69");
-    } else {
-        fastest_today_fmt = format!("{}:{:02}", fastest_ms / 1000 / 60, fastest_ms / 1000 % 60);
+    match fastest_ms {
+        99999999 => { fastest_today_fmt = format!("6969:69"); }
+        _ => { fastest_today_fmt = format!("{}:{:02}", fastest_ms / 1000 / 60, fastest_ms / 1000 % 60); }
     }
     return Json(Session {
         matches: b.matches,
@@ -390,7 +371,7 @@ pub async fn session(offset: i64) -> Json<Session> {
         forfeit_wins: b.forfeit_wins,
         slowest: slowest_today_fmt,
         fastest: fastest_today_fmt,
+        avg: avg_today_fmt,
         resets: b.resets,
-        avg: avg_today_fmt
     })
 }

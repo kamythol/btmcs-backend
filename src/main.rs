@@ -9,6 +9,7 @@ use crate::{
 mod seed;
 mod emotedle;
 mod mcsr_stats;
+mod mcsr;
 mod socials {
     pub mod twitch;
     pub mod youtube;
