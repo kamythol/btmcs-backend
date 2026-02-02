@@ -65,7 +65,7 @@ pub struct Season {
     slowest: String,
     resets: u32,
     death_wins: u32,
-    deathless_wins: u32
+    deathless_wins: u32,
     wins: u32,
     losses: u32
 }
