@@ -1,7 +1,7 @@
 use anyhow::{Error, Result};
 
 use crate::mcsr::*;
-const ID_OFFSET: &str = "5895145"; // 544
+const ID_OFFSET: &str = "5944132"; // 581
 // const ID_OFFSET: &str = "4815034"; // 1
 
 pub async fn get_match(match_id: u32, season: u8) -> Result<match_data::GameData, Error> {

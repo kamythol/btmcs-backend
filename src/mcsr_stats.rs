@@ -95,13 +95,11 @@ pub struct Session {
 
 const UUID: &str = "8a8174eb699a49fcb2299af5eede0992";
 // offsets break todays, only update at 0 pst
-const MATCH_OFFSET: u32 = 544;
-const DEATH_OFFSET: u32 = 366;
+const MATCH_OFFSET: u32 = 581;
+const DEATH_OFFSET: u32 = 395;
 const FFS_SEASON_OFFSET: u32 = 12;
-const FF_WINS_SEASON_OFFSET: u32 = 46;
-const RESETS_SEASON_OFFSET: u32 = 226;
-
-
+const FF_WINS_SEASON_OFFSET: u32 = 49;
+const RESETS_SEASON_OFFSET: u32 = 244;
 
 #[cached(time = 120, sync_writes = "default")]
 pub async fn get_counts() -> Counts {
