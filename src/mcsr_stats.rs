@@ -68,7 +68,8 @@ pub struct Season {
     deathless_wins: u32,
     wins: u32,
     losses: u32,
-    rank: u32
+    rank: u32,
+    average: String
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Overall {
@@ -248,10 +249,16 @@ pub async fn create_data() -> Json<Final>{
     let season_best_ms = p.statistics.season.best_time.ranked.unwrap_or(0);
     let all_best_ms = p.statistics.total.best_time.ranked.unwrap_or(0);
     let avg_today_ms = counts.avg_today;
+    let season_avg_ms = p.statistics.season.completion_time.ranked;
     
     let season_best_fmt = format!("{}:{:02}", season_best_ms / 1000 / 60, season_best_ms / 1000 % 60);
-    let all_best_fmt = format!("{}:{:02}", all_best_ms / 1000 / 60, all_best_ms / 1000 % 60);
+    let season_avg_fmt = format!("{}:{:02}", 
+        season_avg_ms / 1000 / p.statistics.season.completions.ranked / 60,
+        season_avg_ms / 1000 / p.statistics.season.completions.ranked % 60
+    );
     let slowest_season_fmt = format!("{}:{:02}", slowest_season_ms / 1000 / 60, slowest_season_ms / 1000 % 60);
+
+    let all_best_fmt = format!("{}:{:02}", all_best_ms / 1000 / 60, all_best_ms / 1000 % 60);
     let slowest_today_fmt = format!("{}:{:02}", slowest_today_ms / 1000 / 60, slowest_today_ms / 1000 % 60);
     let avg_today_fmt = format!("{}:{:02}", avg_today_ms / 1000 / 60, avg_today_ms / 1000 % 60);
     let fastest_today_fmt: String;
@@ -288,7 +295,8 @@ pub async fn create_data() -> Json<Final>{
         deathless_wins: counts.deathless_wins,
         wins: p.statistics.season.wins.ranked,
         losses: p.statistics.season.loses.ranked,
-        rank: p.elo_rank.unwrap_or(6969)
+        rank: p.elo_rank.unwrap_or(6969),
+        average: season_avg_fmt,
 
     };
     let c = Overall {
