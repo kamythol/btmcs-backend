@@ -95,11 +95,11 @@ pub struct Session {
 
 const UUID: &str = "8a8174eb699a49fcb2299af5eede0992";
 // offsets break todays, only update at 0 pst
-const MATCH_OFFSET: u32 = 581;
-const DEATH_OFFSET: u32 = 395;
+const MATCH_OFFSET: u32 = 600;
+const DEATH_OFFSET: u32 = 412;
 const FFS_SEASON_OFFSET: u32 = 12;
-const FF_WINS_SEASON_OFFSET: u32 = 49;
-const RESETS_SEASON_OFFSET: u32 = 244;
+const FF_WINS_SEASON_OFFSET: u32 = 50;
+const RESETS_SEASON_OFFSET: u32 = 247;
 
 #[cached(time = 120, sync_writes = "default")]
 pub async fn get_counts() -> Counts {
@@ -325,7 +325,7 @@ pub async fn session(offset: i64) -> Json<Session> {
     for m in mh {
         if m.date > offset as u64 {
         let is_win = m.result.uuid.clone().unwrap_or_else(|| "augh".to_string()) == uuid;
-        let gd: match_data::GameData = get_match(m.id, m.season).await.unwrap();
+        let gd = get_match(m.id, m.season).await.unwrap();
             b.matches += 1;
             for plr in gd.changes {
                 if plr.uuid == uuid { b.elo += plr.change.unwrap_or(0); }

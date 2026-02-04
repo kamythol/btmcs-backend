@@ -2,19 +2,19 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Response {
     status: String,
-    pub(crate) data: GameData,
+    pub(crate) data: MatchData,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct GameData {
+pub struct MatchData {
     id: u32,
     #[serde(rename = "type")]
     match_type: u32, 
     seed: Option<Seed>,
     category: Option<String>,
     game_mode: String, 
-    players: Vec<Player>,
+    pub(crate) players: Vec<Player>,
     spectators: Vec<String>, 
     pub(crate) result: ResultData,
     forfeited: bool,
@@ -47,8 +47,8 @@ pub struct Seed {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Player {
-    uuid: String,
-    nickname: String,
+    pub(crate) uuid: String,
+    pub(crate) nickname: String,
     role_type: u32,
     elo_rate: Option<u32>,
     elo_rank: Option<u32>,
